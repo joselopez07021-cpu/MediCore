@@ -1,0 +1,182 @@
+<mc-page-header
+  title="Reportes y análisis"
+  subtitle="Explora los indicadores de los tres módulos del hospital."
+  section="MEDICORE / INTELIGENCIA DE NEGOCIOS"
+  ><button class="btn-primary" (click)="export()" [disabled]="invalid() || tab() === 'powerbi'">
+    ↓ Exportar CSV
+  </button></mc-page-header
+>
+<div
+  class="mb-6 flex flex-wrap gap-2 border-b border-slate-200 pb-3"
+  role="group"
+  aria-label="Tipo de reporte"
+>
+  @for (
+    t of [
+      ['citas', 'Citas y atenciones'],
+      ['servicios', 'Servicios hospitalarios'],
+      ['inventario', 'Inventario'],
+      ['powerbi', 'Power BI'],
+    ];
+    track t[0]
+  ) {
+    <button
+      class="btn-secondary"
+      [class.!bg-sky-700]="tab() === t[0]"
+      [class.!text-white]="tab() === t[0]"
+      [attr.aria-pressed]="tab() === t[0]"
+      (click)="tab.set(t[0])"
+    >
+      {{ t[1] }}
+    </button>
+  }
+</div>
+@if (tab() !== 'powerbi') {
+  <section class="card mb-6">
+    <div class="toolbar">
+      <label class="field"
+        >Desde<input
+          type="date"
+          [value]="from()"
+          (input)="from.set($any($event.target).value)" /></label
+      ><label class="field"
+        >Hasta<input
+          type="date"
+          [value]="to()"
+          (input)="to.set($any($event.target).value)" /></label
+      ><label class="field"
+        >Médico<select [value]="doctor()" (change)="doctor.set(+$any($event.target).value)">
+          <option value="0">Todos los médicos</option>
+          @for (d of store.data().medicos; track d.id) {
+            <option [value]="d.id">{{ d.nombre }}</option>
+          }
+        </select></label
+      ><button class="link mt-5" (click)="from.set(''); to.set(''); doctor.set(0)">
+        Limpiar filtros</button
+      ><span class="ml-auto text-xs text-slate-400">Datos de demostración del navegador</span>
+    </div>
+    @if (invalid()) {
+      <p class="error mx-5 mb-5">La fecha inicial debe ser anterior o igual a la fecha final.</p>
+    }
+  </section>
+  <div class="mb-6 grid gap-4 sm:grid-cols-3">
+    @if (tab() === 'citas') {
+      <article class="card p-6">
+        <p class="text-xs text-slate-500">Total de citas</p>
+        <p class="mt-3 text-3xl font-bold text-slate-900">{{ appointments().length }}</p>
+      </article>
+      <article class="card p-6">
+        <p class="text-xs text-slate-500">Citas atendidas</p>
+        <p class="mt-3 text-3xl font-bold text-sky-700">{{ attended() }}</p>
+      </article>
+      <article class="card p-6">
+        <p class="text-xs text-slate-500">Porcentaje atendido</p>
+        <p class="mt-3 text-3xl font-bold text-teal-600">
+          {{ appointments().length ? ((attended() / appointments().length) * 100).toFixed(1) : 0 }}%
+        </p>
+      </article>
+    } @else if (tab() === 'servicios') {
+      <article class="card p-6">
+        <p class="text-xs text-slate-500">Servicios realizados</p>
+        <p class="mt-3 text-3xl font-bold text-slate-900">{{ serviceCount() }}</p>
+      </article>
+      <article class="card p-6">
+        <p class="text-xs text-slate-500">Atenciones</p>
+        <p class="mt-3 text-3xl font-bold text-sky-700">{{ cares().length }}</p>
+      </article>
+      <article class="card p-6">
+        <p class="text-xs text-slate-500">Promedio de servicios por atención</p>
+        <p class="mt-3 text-3xl font-bold text-teal-600">
+          {{ cares().length ? (serviceCount() / cares().length).toFixed(1) : 0 }}
+        </p>
+      </article>
+    } @else {
+      <article class="card p-6">
+        <p class="text-xs text-slate-500">Movimientos en el período</p>
+        <p class="mt-3 text-3xl font-bold text-slate-900">{{ movements().length }}</p>
+        <p class="mt-2 text-xs text-slate-400">General · sin filtro de médico</p>
+      </article>
+      <article class="card p-6">
+        <p class="text-xs text-slate-500">Insumos por reponer ahora</p>
+        <p class="mt-3 text-3xl font-bold text-amber-600">{{ store.lowStock().length }}</p>
+        <p class="mt-2 text-xs text-slate-400">Existencias actuales · sin filtros</p>
+      </article>
+      <article class="card p-6">
+        <p class="text-xs text-slate-500">Insumos con consumo</p>
+        <p class="mt-3 text-3xl font-bold text-teal-600">{{ consumedTypes() }}</p>
+      </article>
+    }
+  </div>
+  <section class="card p-6">
+    <div class="mb-7 flex flex-wrap justify-between gap-2">
+      <h2>
+        {{
+          tab() === 'citas'
+            ? 'Citas por médico'
+            : tab() === 'servicios'
+              ? 'Servicios más realizados'
+              : 'Consumo de insumos en atenciones'
+        }}
+      </h2>
+      <span class="badge badge-blue">SEGÚN LOS FILTROS</span>
+    </div>
+    <div class="space-y-5">
+      @for (r of bars(); track r.name) {
+        <div class="grid items-center gap-3 sm:grid-cols-[220px_1fr_60px]">
+          <span class="text-xs text-slate-500">{{ r.name }}</span>
+          <div class="h-7 overflow-hidden rounded-md bg-slate-50">
+            <div
+              class="h-full rounded-md bg-sky-600"
+              [class.bg-teal-500]="tab() !== 'citas'"
+              [style.width.%]="(r.count / max()) * 100"
+            ></div>
+          </div>
+          <strong class="text-right text-sm text-sky-900">{{ r.count }}</strong>
+        </div>
+      }
+    </div>
+    <p class="mt-7 text-xs text-slate-400">
+      {{
+        tab() === 'inventario'
+          ? 'Las cantidades corresponden a la unidad de cada insumo. No se suman unidades de medida diferentes.'
+          : 'Los indicadores se calculan sobre los registros de demostración existentes.'
+      }}
+    </p>
+  </section>
+} @else {
+  <section class="card overflow-hidden">
+    <div class="bg-sky-950 px-8 py-10 text-white">
+      <p class="text-xs font-semibold tracking-widest text-teal-300">BUSINESS INTELLIGENCE</p>
+      <h2 class="mt-3 text-3xl font-semibold text-white">Una visión más amplia del hospital</h2>
+      <p class="mt-3 max-w-2xl text-sm leading-relaxed text-sky-100/70">
+        Espacio reservado para integrar los informes de Power BI conectados a PostgreSQL y el
+        análisis multidimensional.
+      </p>
+    </div>
+    <div class="p-8">
+      <span class="badge bg-amber-100 text-amber-800">INTEGRACIÓN PENDIENTE</span>
+      <h2 class="mt-5">El informe todavía no está conectado</h2>
+      <p class="mt-3 max-w-2xl text-sm leading-relaxed text-slate-500">
+        El equipo debe preparar el modelo analítico, publicar el informe y definir la modalidad de
+        incrustación. Mientras tanto, los otros reportes permiten analizar y exportar los datos de
+        esta demostración.
+      </p>
+      <div class="mt-7 grid gap-4 sm:grid-cols-3">
+        @for (
+          t of ['Citas y atenciones', 'Servicios hospitalarios', 'Inventario hospitalario'];
+          track t
+        ) {
+          <div class="rounded-xl border border-slate-200 p-5">
+            <span class="text-xl text-sky-700">▥</span>
+            <h3 class="mt-3 text-sm font-semibold">{{ t }}</h3>
+            <p class="mt-2 text-xs text-slate-400">Área de análisis prevista para Power BI</p>
+          </div>
+        }
+      </div>
+      <p class="mt-6 rounded-lg bg-slate-50 p-4 text-xs text-slate-500">
+        Si el equipo utiliza «Publicar en la web», el informe deberá contener únicamente datos
+        sintéticos.
+      </p>
+    </div>
+  </section>
+}

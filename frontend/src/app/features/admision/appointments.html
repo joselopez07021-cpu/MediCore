@@ -1,0 +1,118 @@
+<mc-page-header
+  title="Citas médicas"
+  subtitle="Coordina los horarios y da seguimiento a cada cita."
+  section="ADMISIÓN / CITAS"
+  ><button class="btn-primary" (click)="open(null)">＋ Programar cita</button></mc-page-header
+>
+<div class="mb-6 grid gap-4 sm:grid-cols-3">
+  @for (s of ['PROGRAMADA', 'CONFIRMADA', 'ATENDIDA']; track s) {
+    <div class="card flex items-center justify-between p-5">
+      <mc-status [value]="s" /><strong class="text-2xl text-slate-800">{{ count(s) }}</strong>
+    </div>
+  }
+</div>
+<section class="card">
+  <div class="toolbar">
+    <input
+      placeholder="Buscar paciente, médico o motivo…"
+      aria-label="Buscar citas"
+      (input)="query.set($any($event.target).value)"
+    /><select aria-label="Filtrar por estado" (change)="status.set($any($event.target).value)">
+      <option value="">Todos los estados</option>
+      @for (s of ['PROGRAMADA', 'CONFIRMADA', 'ATENDIDA', 'CANCELADA', 'NO_ASISTIO']; track s) {
+        <option>{{ s }}</option>
+      }</select
+    ><input
+      type="date"
+      class="!w-auto"
+      aria-label="Filtrar por fecha"
+      (input)="date.set($any($event.target).value)"
+    /><span class="ml-auto text-xs text-slate-400">{{ rows().length }} citas</span>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Paciente / motivo</th>
+          <th>Médico</th>
+          <th>Fecha y hora</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (a of rows(); track a.id) {
+          <tr>
+            <td>
+              <p class="font-semibold text-slate-800">{{ store.patient(a.pacienteId) }}</p>
+              <p class="mt-1 text-xs text-slate-400">{{ a.motivo }}</p>
+            </td>
+            <td class="text-xs">{{ store.doctor(a.medicoId) }}</td>
+            <td>
+              {{ a.fecha | date: 'dd/MM/yyyy' }}
+              <p class="mt-1 text-xs text-sky-700">{{ a.hora }}</p>
+            </td>
+            <td><mc-status [value]="a.estado" /></td>
+            <td>
+              <div class="flex gap-3">
+                @if (a.estado !== 'ATENDIDA') {
+                  <button class="link" (click)="open(a)">Editar</button>
+                }
+                @if (a.estado === 'PROGRAMADA') {
+                  <button class="link" (click)="change(a, 'CONFIRMADA')">Confirmar</button>
+                }
+                @if (a.estado === 'PROGRAMADA' || a.estado === 'CONFIRMADA') {
+                  <button class="text-xs font-medium text-rose-600" (click)="canceling.set(a)">
+                    Cancelar
+                  </button>
+                }
+                @if (a.estado === 'ATENDIDA') {
+                  <span class="text-xs text-slate-400">Atención registrada</span>
+                }
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td class="empty" colspan="5">No hay citas que coincidan con los filtros.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+@if (editing() !== undefined) {
+  <mc-editor
+    [title]="editing() ? 'Editar cita' : 'Programar cita'"
+    [fields]="fields()"
+    [values]="values()"
+    [error]="error()"
+    (save)="save($event)"
+    (cancel)="editing.set(undefined)"
+  />
+}
+@if (canceling(); as a) {
+  <div class="modal-backdrop">
+    <section
+      mcDialog
+      class="modal !max-w-md"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cancel-title"
+      (keydown.escape)="canceling.set(null)"
+    >
+      <h2 id="cancel-title">Cancelar cita</h2>
+      <p class="my-5 text-sm leading-relaxed text-slate-500">
+        Se cancelará la cita de {{ store.patient(a.pacienteId) }} del
+        {{ a.fecha | date: 'dd/MM/yyyy' }} a las {{ a.hora }}. El registro se conservará en el
+        historial.
+      </p>
+      <div class="flex justify-end gap-3">
+        <button class="btn-secondary" (click)="canceling.set(null)">Volver</button
+        ><button class="btn-primary !bg-rose-600" (click)="change(a, 'CANCELADA')">
+          Cancelar cita
+        </button>
+      </div>
+    </section>
+  </div>
+}

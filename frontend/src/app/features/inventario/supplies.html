@@ -1,0 +1,99 @@
+<mc-page-header
+  title="Inventario hospitalario"
+  subtitle="Controla los insumos y anticipa las necesidades de reposición."
+  section="INVENTARIO / INSUMOS"
+  ><a routerLink="/inventario/movimientos" class="btn-secondary">Registrar movimiento</a
+  ><button class="btn-primary" (click)="open(null)">＋ Nuevo insumo</button></mc-page-header
+>
+<div class="mb-6 grid gap-4 sm:grid-cols-3">
+  <div class="card p-5">
+    <p class="text-xs text-slate-500">Insumos en catálogo</p>
+    <p class="mt-2 text-3xl font-bold text-slate-900">{{ store.data().insumos.length }}</p>
+  </div>
+  <div class="card p-5">
+    <p class="text-xs text-slate-500">Categorías de insumos</p>
+    <p class="mt-2 text-3xl font-bold text-slate-900">{{ categories().length }}</p>
+  </div>
+  <button class="card p-5 text-left hover:border-amber-300" (click)="low.set(!low())">
+    <p class="text-xs text-amber-600">Requieren reposición →</p>
+    <p class="mt-2 text-3xl font-bold text-amber-600">{{ store.lowStock().length }}</p>
+  </button>
+</div>
+<section class="card">
+  <div class="toolbar">
+    <input
+      aria-label="Buscar insumos"
+      placeholder="Buscar por nombre o categoría…"
+      (input)="query.set($any($event.target).value)"
+    /><select aria-label="Filtrar categoría" (change)="category.set($any($event.target).value)">
+      <option value="">Todas las categorías</option>
+      @for (c of categories(); track c) {
+        <option>{{ c }}</option>
+      }</select
+    ><label class="flex items-center gap-2 text-xs"
+      ><input type="checkbox" [checked]="low()" (change)="low.set($any($event.target).checked)" />
+      Solo existencias bajas</label
+    >
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Insumo</th>
+          <th>Categoría</th>
+          <th>Existencia</th>
+          <th>Mínimo</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of rows(); track p.id) {
+          <tr>
+            <td class="font-semibold text-slate-800">
+              {{ p.nombre }}
+              <p class="mt-1 text-[11px] font-normal text-slate-400">
+                INS-{{ p.id.toString().padStart(4, '0') }}
+              </p>
+            </td>
+            <td>{{ p.categoria }}</td>
+            <td>
+              <strong [class.text-amber-600]="p.stock <= p.minimo">{{ p.stock }}</strong>
+              <span class="text-xs text-slate-400">{{ p.unidad }}</span>
+            </td>
+            <td>{{ p.minimo }}</td>
+            <td>
+              <span
+                class="badge"
+                [class.badge-green]="p.stock > p.minimo"
+                [class.badge-red]="p.stock === 0"
+                [class.text-amber-700]="p.stock > 0 && p.stock <= p.minimo"
+                >{{
+                  p.stock === 0 ? 'AGOTADO' : p.stock <= p.minimo ? 'REPOSICIÓN' : 'DISPONIBLE'
+                }}</span
+              >
+            </td>
+            <td><button class="link" (click)="open(p)">Editar</button></td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="empty">No hay insumos que coincidan con los filtros.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="border-t border-slate-100 p-4 text-xs text-slate-400">
+    Inventario general · Las existencias se actualizan mediante movimientos y consumos de atención.
+  </p>
+</section>
+@if (editing() !== undefined) {
+  <mc-editor
+    [title]="editing() ? 'Editar insumo' : 'Nuevo insumo'"
+    [fields]="fields"
+    [values]="values()"
+    [error]="error()"
+    (save)="save($event)"
+    (cancel)="editing.set(undefined)"
+  />
+}

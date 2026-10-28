@@ -1,0 +1,133 @@
+<mc-page-header
+  title="Pacientes"
+  subtitle="Administra el directorio y consulta la actividad de cada paciente."
+  section="ADMISIÓN / PACIENTES"
+  ><button class="btn-primary" (click)="open(null)">＋ Registrar paciente</button></mc-page-header
+>
+<section class="card">
+  <div class="toolbar">
+    <input
+      aria-label="Buscar pacientes"
+      placeholder="Buscar por nombre, documento o correo…"
+      (input)="query.set($any($event.target).value)"
+    /><span class="ml-auto text-xs text-slate-400">{{ rows().length }} pacientes</span>
+  </div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Paciente</th>
+          <th>Documento</th>
+          <th>Contacto</th>
+          <th>Nacimiento</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of rows(); track p.id) {
+          <tr>
+            <td>
+              <div class="flex items-center gap-3">
+                <span
+                  class="flex h-10 w-10 items-center justify-center rounded-full bg-sky-50 text-xs font-bold text-sky-700"
+                  >{{ p.nombre.slice(0, 2).toUpperCase() }}</span
+                >
+                <div class="font-semibold text-slate-800">
+                  {{ p.nombre }}
+                  <p class="mt-1 text-xs font-normal text-slate-400">
+                    PAC-{{ p.id.toString().padStart(4, '0') }}
+                  </p>
+                </div>
+              </div>
+            </td>
+            <td>{{ p.documento }}</td>
+            <td>
+              <p>{{ p.telefono }}</p>
+              <p class="mt-1 text-xs text-slate-400">{{ p.correo }}</p>
+            </td>
+            <td>{{ p.nacimiento | date: 'dd/MM/yyyy' }}</td>
+            <td>
+              <div class="flex gap-4">
+                <button class="link" (click)="detail.set(p)">Ver ficha</button
+                ><button class="link" (click)="open(p)">Editar</button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="empty">
+              No se encontraron pacientes. Prueba otra búsqueda o registra uno nuevo.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+@if (editing() !== undefined) {
+  <mc-editor
+    [title]="editing() ? 'Editar paciente' : 'Registrar paciente'"
+    [fields]="fields"
+    [values]="values()"
+    [error]="error()"
+    (save)="save($event)"
+    (cancel)="editing.set(undefined)"
+  />
+}
+@if (detail(); as p) {
+  <div class="modal-backdrop" (click)="detail.set(null)">
+    <section
+      class="modal"
+      mcDialog
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="patient-title"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="detail.set(null)"
+    >
+      <div class="flex justify-between">
+        <div>
+          <p class="eyebrow">FICHA ADMINISTRATIVA</p>
+          <h2 id="patient-title" class="mt-2">{{ p.nombre }}</h2>
+        </div>
+        <button class="btn-secondary" (click)="detail.set(null)" aria-label="Cerrar ficha">
+          ✕
+        </button>
+      </div>
+      <dl class="my-6 grid grid-cols-2 gap-5 rounded-xl bg-slate-50 p-5 text-sm">
+        <div>
+          <dt class="text-xs text-slate-400">Documento</dt>
+          <dd class="mt-1">{{ p.documento }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-slate-400">Nacimiento</dt>
+          <dd class="mt-1">{{ p.nacimiento | date: 'dd/MM/yyyy' }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-slate-400">Teléfono</dt>
+          <dd class="mt-1">{{ p.telefono }}</dd>
+        </div>
+        <div>
+          <dt class="text-xs text-slate-400">Correo</dt>
+          <dd class="mt-1 break-all">{{ p.correo }}</dd>
+        </div>
+      </dl>
+      <h2>Historial de citas</h2>
+      @for (a of history(); track a.id) {
+        <div
+          class="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 py-3 text-sm"
+        >
+          <div>
+            {{ a.fecha | date: 'dd/MM/yyyy' }} · {{ a.hora }}
+            <p class="mt-1 text-xs text-slate-400">
+              {{ store.doctor(a.medicoId) }} · {{ a.motivo }}
+            </p>
+          </div>
+          <mc-status [value]="a.estado" />
+        </div>
+      } @empty {
+        <p class="empty">Este paciente todavía no tiene citas.</p>
+      }
+    </section>
+  </div>
+}

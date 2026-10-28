@@ -1,0 +1,166 @@
+<div class="mb-7 flex flex-wrap items-center justify-between gap-4">
+  <div>
+    <p class="eyebrow">TU HOSPITAL, EN UNA SOLA VISTA</p>
+    <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-900">
+      Buen día, {{ auth.role() === 'MEDICO' ? 'Dra. Elena' : 'equipo' }}
+      <span class="text-teal-500">.</span>
+    </h1>
+    <p class="mt-2 text-sm text-slate-500">Este es el resumen operativo de Hospital Boston Vida.</p>
+  </div>
+  <div class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs text-slate-500">
+    ▦ {{ date | date: 'dd/MM/yyyy' }}
+  </div>
+</div>
+<section class="relative mb-7 overflow-hidden rounded-2xl bg-sky-950 p-7 text-white sm:p-8">
+  <div class="relative z-10 max-w-xl">
+    <span class="text-[10px] font-semibold tracking-[.2em] text-teal-300"
+      >GESTIÓN HOSPITALARIA INTEGRADA</span
+    >
+    <h2 class="mt-3 text-2xl font-semibold text-white">Más conexión. Mejor atención.</h2>
+    <p class="mt-2 text-sm leading-relaxed text-sky-100/70">
+      Organiza las citas, acompaña cada atención y mantén los recursos disponibles desde un mismo
+      lugar.
+    </p>
+    <div class="mt-5 flex flex-wrap gap-3">
+      @if (auth.can(['ADMISION'])) {
+        <a
+          routerLink="/admision/citas"
+          class="rounded-lg bg-teal-400 px-4 py-2.5 text-xs font-bold text-sky-950"
+          >Gestionar citas →</a
+        >
+      }
+      @if (auth.can(['MEDICO'])) {
+        <a
+          routerLink="/admision/agenda"
+          class="rounded-lg border border-white/20 px-4 py-2.5 text-xs font-medium text-white"
+          >Ver agenda médica</a
+        >
+      }
+      @if (auth.role() === 'INVENTARIO') {
+        <a routerLink="/inventario/insumos" class="btn-primary">Ver inventario →</a>
+      }
+    </div>
+  </div>
+  <img
+    src="medicore-logo.png"
+    alt=""
+    class="absolute -right-5 -top-12 h-80 w-80 opacity-15 sm:right-12"
+  />
+</section>
+<section class="mb-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicadores">
+  @for (stat of stats(); track stat.label) {
+    <article class="card p-5">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-medium text-slate-500">{{ stat.label }}</p>
+        <span
+          class="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-xl text-sky-600"
+          [class.bg-amber-50]="stat.tone === 'amber'"
+          [class.text-amber-600]="stat.tone === 'amber'"
+          >{{ stat.icon }}</span
+        >
+      </div>
+      <p class="mt-1 text-3xl font-bold text-slate-900">{{ stat.value }}</p>
+      <p class="mt-3 text-[11px] text-slate-400">{{ stat.detail }}</p>
+    </article>
+  }
+</section>
+<div class="grid items-start gap-6 xl:grid-cols-[1.7fr_1fr]">
+  <section class="card">
+    <div class="flex items-center justify-between p-5">
+      <div>
+        <h2>Agenda de hoy</h2>
+        <p class="mt-1 text-xs text-slate-400">Citas y estado de atención</p>
+      </div>
+      @if (auth.can(['ADMISION', 'MEDICO'])) {
+        <a routerLink="/admision/agenda" class="link">Ver agenda ↗</a>
+      }
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Paciente</th>
+            <th>Médico / hora</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of day(); track a.id) {
+            <tr>
+              <td>
+                <div class="flex items-center gap-3">
+                  <span
+                    class="flex h-9 w-9 items-center justify-center rounded-full bg-teal-50 text-xs font-bold text-teal-700"
+                    >{{ store.patient(a.pacienteId).slice(0, 2).toUpperCase() }}</span
+                  >
+                  <div class="font-medium text-slate-800">
+                    {{ store.patient(a.pacienteId) }}
+                    <p class="mt-1 text-[11px] font-normal text-slate-400">{{ a.motivo }}</p>
+                  </div>
+                </div>
+              </td>
+              <td class="text-xs">
+                {{ store.doctor(a.medicoId) }}
+                <p class="mt-1 font-semibold text-sky-700">{{ a.hora }}</p>
+              </td>
+              <td><mc-status [value]="a.estado" /></td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="3" class="empty">No hay citas programadas para hoy.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <div class="space-y-6">
+    <section class="card p-5">
+      <div class="flex justify-between">
+        <h2>Estado de las citas</h2>
+        <span class="badge">GENERAL</span>
+      </div>
+      <div class="my-5 flex h-3 overflow-hidden rounded-full bg-slate-100">
+        @for (s of states(); track s.estado; let i = $index) {
+          <div
+            [style.width.%]="percentage(s.count)"
+            [style.background]="['#38bdf8', '#2dd4bf', '#0369a1', '#fda4af', '#94a3b8'][i]"
+          ></div>
+        }
+      </div>
+      <div class="space-y-3">
+        @for (s of states(); track s.estado; let i = $index) {
+          <div class="flex items-center gap-2 text-xs">
+            <span
+              class="h-2 w-2 rounded-full"
+              [style.background]="['#38bdf8', '#2dd4bf', '#0369a1', '#fda4af', '#94a3b8'][i]"
+            ></span
+            ><span class="flex-1 text-slate-500">{{ s.estado.replaceAll('_', ' ') }}</span
+            ><strong>{{ s.count }}</strong
+            ><span class="w-10 text-right text-slate-400">{{ percentage(s.count) }}%</span>
+          </div>
+        }
+      </div>
+    </section>
+    <section class="card p-5">
+      <div class="mb-4 flex items-center justify-between">
+        <h2>Reposición de insumos</h2>
+        <span class="badge bg-amber-50 text-amber-700">{{ store.lowStock().length }} ALERTAS</span>
+      </div>
+      @for (p of store.lowStock().slice(0, 3); track p.id) {
+        <div class="flex items-center justify-between border-t border-slate-100 py-3 text-xs">
+          <div class="font-medium">
+            {{ p.nombre }}
+            <p class="mt-1 font-normal text-slate-400">Mínimo: {{ p.minimo }} {{ p.unidad }}</p>
+          </div>
+          <span class="font-bold text-amber-600">{{ p.stock }}</span>
+        </div>
+      } @empty {
+        <p class="text-sm text-slate-500">Todos los insumos tienen existencias suficientes.</p>
+      }
+      @if (auth.can(['INVENTARIO'])) {
+        <a routerLink="/inventario/insumos" class="link mt-3 block">Consultar inventario →</a>
+      }
+    </section>
+  </div>
+</div>
