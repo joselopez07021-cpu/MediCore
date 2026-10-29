@@ -1,0 +1,111 @@
+import { Routes } from '@angular/router';
+import { sessionGuard, roleGuard } from './nucleo/autenticacion';
+
+export const routes: Routes = [
+  { path: 'login', loadComponent: () => import('./modulos/autenticacion/inicio-sesion').then((m) => m.Login) },
+  {
+    path: '',
+    canActivate: [sessionGuard],
+    loadComponent: () => import('./estructura/estructura-principal').then((m) => m.Shell),
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'inicio' },
+      {
+        path: 'inicio',
+        title: 'Inicio · MediCore',
+        loadComponent: () => import('./modulos/inicio/inicio').then((m) => m.Dashboard),
+      },
+      {
+        path: 'admision/pacientes',
+        title: 'Pacientes · MediCore',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMISION'] },
+        loadComponent: () => import('./modulos/admision/pacientes').then((m) => m.Patients),
+      },
+      {
+        path: 'admision/citas',
+        title: 'Citas · MediCore',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMISION'] },
+        loadComponent: () => import('./modulos/admision/citas').then((m) => m.Appointments),
+      },
+      {
+        path: 'admision/agenda',
+        title: 'Agenda · MediCore',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMISION', 'MEDICO'] },
+        loadComponent: () => import('./modulos/admision/agenda').then((m) => m.Agenda),
+      },
+      {
+        path: 'admision/medicos',
+        title: 'Equipo médico · MediCore',
+        canActivate: [roleGuard],
+        data: { roles: ['ADMISION', 'MEDICO'] },
+        loadComponent: () => import('./modulos/admision/medicos').then((m) => m.Doctors),
+      },
+      {
+        path: 'servicios/atenciones',
+        title: 'Atenciones · MediCore',
+        canActivate: [roleGuard],
+        data: { roles: ['MEDICO'] },
+        loadComponent: () => import('./modulos/servicios/atenciones').then((m) => m.Cares),
+      },
+      {
+        path: 'servicios/catalogo',
+        title: 'Servicios · MediCore',
+        canActivate: [roleGuard],
+        data: { roles: ['MEDICO'] },
+        loadComponent: () => import('./modulos/servicios/catalogo').then((m) => m.Catalog),
+      },
+      {
+        path: 'inventario/insumos',
+        title: 'Inventario · MediCore',
+        canActivate: [roleGuard],
+        data: { roles: ['INVENTARIO'] },
+        loadComponent: () => import('./modulos/inventario/insumos').then((m) => m.Supplies),
+      },
+      {
+        path: 'inventario/movimientos',
+        title: 'Movimientos · MediCore',
+        canActivate: [roleGuard],
+        data: { roles: ['INVENTARIO'] },
+        loadComponent: () => import('./modulos/inventario/movimientos').then((m) => m.Movements),
+      },
+      {
+        path: 'administracion/compras',
+        title: 'Compras · MediCore',
+        canActivate: [roleGuard],
+        data: { roles: [], module: 'compras' },
+        loadComponent: () => import('./modulos/administracion/modulo-provisional').then((m) => m.Prototype),
+      },
+      {
+        path: 'administracion/finanzas',
+        title: 'Finanzas · MediCore',
+        canActivate: [roleGuard],
+        data: { roles: [], module: 'finanzas' },
+        loadComponent: () => import('./modulos/administracion/modulo-provisional').then((m) => m.Prototype),
+      },
+      {
+        path: 'administracion/rrhh',
+        title: 'Recursos humanos · MediCore',
+        canActivate: [roleGuard],
+        data: { roles: [], module: 'rrhh' },
+        loadComponent: () => import('./modulos/administracion/modulo-provisional').then((m) => m.Prototype),
+      },
+      {
+        path: 'administracion/usuarios',
+        title: 'Usuarios · MediCore',
+        canActivate: [roleGuard],
+        data: { roles: [] },
+        loadComponent: () => import('./modulos/administracion/usuarios').then((m) => m.Users),
+      },
+      {
+        path: 'reportes',
+        title: 'Reportes · MediCore',
+        canActivate: [roleGuard],
+        data: { roles: [] },
+        loadComponent: () => import('./modulos/reportes/reportes').then((m) => m.Reports),
+      },
+      { path: '**', loadComponent: () => import('./compartidos/pagina-no-encontrada').then((m) => m.NotFound) },
+    ],
+  },
+];

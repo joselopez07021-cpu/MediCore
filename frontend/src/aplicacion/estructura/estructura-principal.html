@@ -1,0 +1,112 @@
+<header class="border-b border-slate-200 bg-white">
+  <div class="mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-5 py-4 lg:px-10">
+    <a routerLink="/inicio" class="flex items-center gap-2.5"
+      ><img src="medicore-logo.png" alt="" class="h-12 w-12 object-contain" />
+      <div>
+        <span class="text-2xl font-bold tracking-tight text-sky-950"
+          >Medi<span class="text-teal-500">Core</span></span
+        >
+        <p class="text-[10px] font-semibold tracking-[.15em] text-slate-500">
+          HOSPITAL BOSTON VIDA
+        </p>
+      </div></a
+    >
+    <div class="flex items-center gap-4">
+      <span
+        class="hidden rounded-full bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700 sm:block"
+        >● Entorno de demostración</span
+      >
+      <div class="hidden text-right md:block">
+        <p class="text-sm font-semibold">
+          {{ auth.role() === 'MEDICO' ? store.doctor(auth.medicoId()!) : 'Usuario de demostración' }}
+        </p>
+        <p class="text-xs text-slate-500">{{ auth.role() }}</p>
+      </div>
+      <span
+        class="flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-sky-800"
+        >{{ auth.role()?.slice(0, 2) }}</span
+      ><button class="text-xs text-slate-500 hover:text-red-600" (click)="logout()">Salir ↗</button
+      ><button
+        class="btn-secondary lg:hidden"
+        (click)="menu.set(!menu())"
+        [attr.aria-expanded]="menu()"
+        aria-label="Abrir navegación"
+      >
+        ☰
+      </button>
+    </div>
+  </div>
+  <nav
+    class="mx-auto max-w-[1440px] px-5 lg:px-10"
+    aria-label="Navegación principal"
+    [class.mobile-open]="menu()"
+  >
+    <div class="nav-items" (click)="closeMenus($event)">
+      <a routerLink="/inicio" routerLinkActive="nav-active" class="nav-link"
+        >⌂ <span>Inicio</span></a
+      >
+      @if (auth.can(['ADMISION', 'MEDICO'])) {
+        <details class="nav-group">
+          <summary class="nav-link">▦ Admisión y citas ⌄</summary>
+          <div class="nav-dropdown">
+            @if (auth.can(['ADMISION'])) {
+              <a routerLink="/admision/pacientes">Pacientes</a
+              ><a routerLink="/admision/citas">Citas</a>
+            }
+            <a routerLink="/admision/agenda">Agenda médica</a
+            ><a routerLink="/admision/medicos">Directorio médico</a>
+          </div>
+        </details>
+      }
+      @if (auth.can(['MEDICO'])) {
+        <details class="nav-group">
+          <summary class="nav-link">♡ Servicios hospitalarios ⌄</summary>
+          <div class="nav-dropdown">
+            <a routerLink="/servicios/atenciones">Atenciones médicas</a
+            ><a routerLink="/servicios/catalogo">Catálogo de servicios</a>
+          </div>
+        </details>
+      }
+      @if (auth.can(['INVENTARIO'])) {
+        <details class="nav-group">
+          <summary class="nav-link">▤ Inventario ⌄</summary>
+          <div class="nav-dropdown">
+            <a routerLink="/inventario/insumos">Insumos y existencias</a
+            ><a routerLink="/inventario/movimientos">Movimientos</a>
+          </div>
+        </details>
+      }
+      @if (auth.can([])) {
+        <details class="nav-group">
+          <summary class="nav-link">▧ Administración ⌄</summary>
+          <div class="nav-dropdown">
+            <a routerLink="/administracion/compras">Compras y abastecimiento</a
+            ><a routerLink="/administracion/finanzas">Finanzas y contabilidad</a
+            ><a routerLink="/administracion/rrhh">Recursos humanos</a
+            ><a routerLink="/administracion/usuarios">Usuarios y roles</a>
+          </div>
+        </details>
+        <a routerLink="/reportes" routerLinkActive="nav-active" class="nav-link">▥ Reportes</a>
+      }
+    </div>
+  </nav>
+</header>
+<main class="mx-auto min-h-[75vh] max-w-[1440px] px-5 py-8 lg:px-10"><router-outlet /></main>
+<footer
+  class="mx-auto flex max-w-[1440px] flex-wrap justify-between gap-2 border-t border-slate-200 px-5 py-5 text-xs text-slate-400 lg:px-10"
+>
+  <span>MediCore ERP · Hospital Privado Boston Vida</span
+  ><span>Proyecto académico · UCR · Datos ficticios</span>
+</footer>
+@if (store.notice()) {
+  <div
+    role="status"
+    class="fixed bottom-6 right-6 z-50 flex max-w-sm items-center gap-4 rounded-xl bg-sky-950 p-4 text-sm text-white shadow-xl"
+  >
+    <span>{{ store.notice() }}</span
+    ><button (click)="store.notice.set('')" aria-label="Cerrar mensaje">✕</button>
+  </div>
+}
+@if (store.storageWarning()) {
+  <div role="alert" class="bg-amber-100 p-3 text-sm">{{ store.storageWarning() }}</div>
+}

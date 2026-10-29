@@ -8,30 +8,30 @@ El frontend funciona sin levantar Node/Express. Elegir un perfil en la pantalla 
 
 ## Organización
 
-- `src/app/core/models.ts`: modelos de presentación para la demo; no son contratos confirmados del backend.
-- `src/app/core/demo-data.ts`: carga inicial ficticia, con citas del día local de apertura.
-- `src/app/core/demo-store.ts`: consultas y operaciones compartidas; persistencia y transacción local de atención/consumo.
-- `src/app/core/auth.ts`: sesión y permisos simulados; guards de navegación.
-- `src/app/core/api-config.ts`: URL base centralizada de la API.
-- `src/app/services/api.ts`: servicio original de comprobación de conexión con el único endpoint disponible, `GET /api`. No es necesario para la demo.
-- `src/app/layout`: encabezado, navegación superior y pie de página.
-- `src/app/shared`: cabecera de páginas, estado de cita, editor reactivo y página 404.
-- `src/app/features/auth`: acceso de demostración.
-- `src/app/features/dashboard`: resumen operativo calculado desde los datos compartidos.
-- `src/app/features/admision`: pacientes, citas, agenda y directorio médico.
-- `src/app/features/servicios`: catálogo y registro/consulta de atenciones.
-- `src/app/features/inventario`: insumos, entradas, salidas y trazabilidad de consumos.
-- `src/app/features/administracion`: tres prototipos visuales y consulta de perfiles.
-- `src/app/features/reportes`: indicadores filtrables, gráficos, exportación CSV y espacio para Power BI.
-- `src/styles.css`: Tailwind CSS y estilos compartidos mediante `@apply`. No hay biblioteca visual externa ni fuentes remotas.
+- `src/aplicacion/nucleo/modelos.ts`: modelos de presentación para la demo; no son contratos confirmados del backend.
+- `src/aplicacion/nucleo/datos-demostracion.ts`: carga inicial ficticia, con citas del día local de apertura.
+- `src/aplicacion/nucleo/almacen-demostracion.ts`: consultas y operaciones compartidas; persistencia y transacción local de atención/consumo.
+- `src/aplicacion/nucleo/autenticacion.ts`: sesión y permisos simulados; guards de navegación.
+- `src/aplicacion/nucleo/configuracion-api.ts`: URL base centralizada de la API.
+- `src/aplicacion/servicios/servicio-api.ts`: servicio original de comprobación de conexión con el único endpoint disponible, `GET /api`. No es necesario para la demo.
+- `src/aplicacion/estructura`: encabezado, navegación superior y pie de página.
+- `src/aplicacion/compartidos`: cabecera de páginas, estado de cita, editor reactivo y página 404.
+- `src/aplicacion/modulos/autenticacion`: acceso de demostración.
+- `src/aplicacion/modulos/inicio`: resumen operativo calculado desde los datos compartidos.
+- `src/aplicacion/modulos/admision`: pacientes, citas, agenda y directorio médico.
+- `src/aplicacion/modulos/servicios`: catálogo y registro/consulta de atenciones.
+- `src/aplicacion/modulos/inventario`: insumos, entradas, salidas y trazabilidad de consumos.
+- `src/aplicacion/modulos/administracion`: tres prototipos visuales y consulta de perfiles.
+- `src/aplicacion/modulos/reportes`: indicadores filtrables, gráficos, exportación CSV y espacio para Power BI.
+- `src/estilos.css`: Tailwind CSS y estilos compartidos mediante `@apply`. No hay biblioteca visual externa ni fuentes remotas.
 
-Los componentes son standalone y las páginas se cargan de manera diferida desde `app.routes.ts`. Los formularios usan Reactive Forms. Se utilizan signals/computed para propagar cambios entre módulos.
+Los componentes son standalone y las páginas se cargan de manera diferida desde `rutas-aplicacion.ts`. Los formularios usan Reactive Forms. Se utilizan signals/computed para propagar cambios entre módulos.
 
 ## Flujos disponibles
 
 1. Registrar/editar un paciente y consultar su ficha administrativa e historial de citas.
 2. Programar/editar/confirmar/cancelar una cita. Cambiar a NO_ASISTIO mediante edición. Se rechaza un mismo horario exacto para médico o paciente. La demo no define duración de cita: el backend deberá confirmar esa regla.
-3. Consultar agenda por fecha/médico; el perfil MEDICO representa a Elena Morales (`medicoId=1`).
+3. Consultar agenda por fecha/médico; al elegir el perfil Médico se selecciona un profesional del directorio. Su identidad se conserva en sessionStorage y filtra las citas del inicio, agenda y atenciones.
 4. Desde agenda, abrir una atención con la cita seleccionada; registrar diagnóstico, observaciones, varios servicios e insumos opcionales.
 5. Al guardar una atención, marcar la cita ATENDIDA, descontar todos los insumos y agregar movimientos de SALIDA vinculados. Si falla el stock de cualquier insumo, no se modifica ningún registro. Las atenciones guardadas son de consulta, sin edición ni eliminación.
 6. Crear/editar insumos. Un insumo nuevo comienza en cero; para cargar existencias se registra una ENTRADA. Las existencias no son un campo de edición libre.
