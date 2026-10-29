@@ -2,6 +2,16 @@ import { Injectable, signal, inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { Role } from './modelos';
 import { DemoStore } from './almacen-demostracion';
+
+// Credenciales públicas, únicamente para presentar el flujo de acceso.
+export const DEMO_ACCOUNTS: Record<Role, string> = {
+  ADMINISTRADOR: 'admin',
+  ADMISION: 'admision',
+  MEDICO: 'medico',
+  INVENTARIO: 'inventario',
+};
+export const DEMO_PASSWORD = 'demo123';
+
 @Injectable({ providedIn: 'root' })
 export class Auth {
   private store = inject(DemoStore);
@@ -49,8 +59,18 @@ export class Auth {
   can(roles: Role[]) {
     return this.role() === 'ADMINISTRADOR' || roles.includes(this.role()!);
   }
+  verifyCredentials(role: Role, username: string, password: string) {
+    return username.trim().toLowerCase() === DEMO_ACCOUNTS[role] && password === DEMO_PASSWORD;
+  }
 }
-export const sessionGuard: CanActivateFn = () =>
-  inject(Auth).role() ? true : inject(Router).createUrlTree(['/login']);
-export const roleGuard: CanActivateFn = (route) =>
-  inject(Auth).can(route.data['roles'] || []) ? true : inject(Router).createUrlTree(['/inicio']);
+export const sessionGuard: CanActivateFn = (_, state) =>
+  inject(Auth).role()
+    ? true
+    : inject(Router).createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
+export const roleGuard: CanActivateFn = (route, state) => {
+  const auth = inject(Auth);
+  const router = inject(Router);
+  if (!auth.role())
+    return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
+  return auth.can(route.data['roles'] || []) ? true : router.createUrlTree(['/inicio']);
+};

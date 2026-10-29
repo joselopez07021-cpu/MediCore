@@ -4,7 +4,7 @@
 
 Desde `frontend`, ejecutar `npm install` y `npm start` (en PowerShell con políticas restrictivas: `npm.cmd install` y `npm.cmd start`). Abrir `http://localhost:4200`.
 
-El frontend funciona sin levantar Node/Express. Elegir un perfil en la pantalla de acceso. La sesión se mantiene en sessionStorage y los datos compartidos en localStorage con la clave `medicore-demo-v1`. Para reiniciar la demostración se puede quitar únicamente esa clave desde las herramientas del navegador. No registrar datos de personas reales.
+El frontend funciona sin levantar Node/Express. Elegir un perfil en la pantalla de acceso y usar su usuario de muestra (`admin`, `admision`, `medico` o `inventario`) con la contraseña `demo123`. Las credenciales se muestran en el formulario. El login se solicita una vez por sesión; después se puede navegar entre módulos permitidos y recargar sin volver a ingresar credenciales. La sesión se mantiene en sessionStorage hasta pulsar «Salir» o cerrar la pestaña. Los accesos por URL directa sin sesión llevan al login y luego abren el destino elegido, incluidos sus parámetros, si el perfil tiene permiso. Los módulos de otro rol redirigen al inicio. Los datos compartidos se guardan en localStorage con la clave `medicore-demo-v1`. Para reiniciar la demostración se puede quitar únicamente esa clave desde las herramientas del navegador. No registrar datos de personas reales.
 
 ## Organización
 
@@ -14,6 +14,7 @@ El frontend funciona sin levantar Node/Express. Elegir un perfil en la pantalla 
 - `src/aplicacion/nucleo/autenticacion.ts`: sesión y permisos simulados; guards de navegación.
 - `src/aplicacion/nucleo/configuracion-api.ts`: URL base centralizada de la API.
 - `src/aplicacion/servicios/servicio-api.ts`: servicio original de comprobación de conexión con el único endpoint disponible, `GET /api`. No es necesario para la demo.
+- `src/aplicacion/servicios/servicio-chatbot.ts`: contrato y adaptador de muestra del asistente flotante. Guía de conexión: [CHATBOT.md](./CHATBOT.md).
 - `src/aplicacion/estructura`: encabezado, navegación superior y pie de página.
 - `src/aplicacion/compartidos`: cabecera de páginas, estado de cita, editor reactivo y página 404.
 - `src/aplicacion/modulos/autenticacion`: acceso de demostración.
@@ -52,13 +53,17 @@ No se crearon endpoints nuevos ni se asumió que existe autenticación real. Ant
 
 Reemplazar las operaciones de `DemoStore` por servicios HttpClient por dominio; mapear DTOs reales a los modelos de pantalla y agregar estados de carga mientras se esperan respuestas. El editor conserva el formulario ante errores. Quitar la persistencia local de los registros clínicos y el selector de roles cuando exista autenticación. El backend debe validar permisos, relaciones, duplicados y existencias dentro de una transacción PostgreSQL: los guards y validaciones de Angular no son seguridad del servidor.
 
-`API_CONFIG` es la única URL base. El servicio original `Api` conserva el endpoint real de prueba y no se invoca al entrar al frontend. Para autenticación, acordar primero si se usarán cookies o tokens; no hay credenciales ni tokens ficticios implementados.
+`API_CONFIG` es la única URL base. El servicio original `Api` conserva el endpoint real de prueba y no se invoca al entrar al frontend. Las credenciales públicas de demostración se validan únicamente en Angular y no generan tokens ni solicitudes al backend. Para la autenticación real, acordar primero si se usarán cookies o tokens y sustituir esta validación simulada.
 
 ## Alcance y pendientes externos
 
 Compras, Finanzas y Recursos Humanos son prototipos: solo búsqueda de registros ilustrativos. No generan operaciones ni afectan los tres módulos principales. Usuarios y roles muestra perfiles de referencia, sin crear cuentas.
 
 Power BI está identificado como pendiente, sin iframe vacío o URL inventada. El backend, PostgreSQL, la carga anual de SQL, cubos/modelo analítico y la publicación/incrustación de Power BI quedan a cargo de la siguiente fase. Las gráficas locales no se presentan como cubos OLAP.
+
+El asistente flotante está disponible en todas las rutas con respuestas locales de muestra.
+Su interfaz está preparada para reemplazar `CHATBOT_GATEWAY` por un adaptador real;
+el endpoint, la autenticación y el procesamiento de mensajes quedan pendientes del backend.
 
 ## Verificación
 

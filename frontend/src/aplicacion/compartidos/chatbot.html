@@ -1,0 +1,147 @@
+<div class="chat-widget">
+  @if (open()) {
+    <section
+      id="mc-chat-panel"
+      role="dialog"
+      aria-labelledby="mc-chat-title"
+      class="chat-panel flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+      (keydown.escape)="close($event)"
+    >
+      <header class="flex shrink-0 items-center gap-3 bg-sky-950 px-5 py-4 text-white">
+        <span class="chat-avatar h-11 w-11">
+          <img src="asistente-medicore.png" alt="" />
+        </span>
+        <div class="min-w-0 flex-1">
+          <h2 id="mc-chat-title" class="text-sm font-semibold text-white">Asistente MediCore</h2>
+          <p class="mt-0.5 text-xs text-sky-100/80">Una mano con tu día a día</p>
+        </div>
+        <button
+          type="button"
+          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-xl hover:bg-white/10"
+          aria-label="Cerrar chat"
+          (click)="close()"
+        >
+          ×
+        </button>
+      </header>
+      <div
+        class="flex shrink-0 items-center gap-2 border-b border-teal-100 bg-teal-50 px-5 py-2.5 text-xs text-teal-900"
+      >
+        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-teal-600" aria-hidden="true"></span>
+        Vista previa · respuestas de muestra
+      </div>
+      <div
+        #messageLog
+        class="chat-messages min-h-0 flex-1 space-y-4 overflow-y-auto bg-slate-50 px-4 py-5"
+        role="log"
+        aria-label="Conversación con el asistente"
+        aria-live="polite"
+        aria-relevant="additions"
+        [attr.aria-busy]="pending()"
+      >
+        @for (message of messages(); track $index) {
+          <div class="flex" [class.justify-end]="message.role === 'user'">
+            <div
+              class="chat-bubble max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-relaxed"
+              [class.bg-sky-800]="message.role === 'user'"
+              [class.text-white]="message.role === 'user'"
+              [class.rounded-br-sm]="message.role === 'user'"
+              [class.bg-white]="message.role === 'assistant'"
+              [class.border]="message.role === 'assistant'"
+              [class.border-slate-200]="message.role === 'assistant'"
+              [class.rounded-bl-sm]="message.role === 'assistant'"
+            >
+              <span class="sr-only">{{ message.role === 'user' ? 'Tú' : 'Asistente' }}: </span
+              >{{ message.content }}
+            </div>
+          </div>
+        }
+        @if (messages().length === 1) {
+          <div class="flex flex-col items-start gap-2" aria-label="Preguntas sugeridas">
+            @for (suggestion of suggestions; track suggestion) {
+              <button
+                type="button"
+                class="rounded-xl border border-sky-200 bg-white px-3 py-2 text-left text-xs font-medium text-sky-800 transition hover:border-sky-400 hover:bg-sky-50"
+                (click)="send(suggestion)"
+              >
+                {{ suggestion }} ↗
+              </button>
+            }
+          </div>
+        }
+        @if (pending()) {
+          <p role="status" class="px-1 text-xs text-slate-500">Preparando respuesta…</p>
+        }
+      </div>
+      @if (error()) {
+        <div
+          class="flex shrink-0 items-center gap-3 border-t border-rose-100 bg-rose-50 px-4 py-3 text-xs text-rose-700"
+        >
+          <p role="alert" class="flex-1">{{ error() }}</p>
+          <button
+            type="button"
+            class="font-semibold underline underline-offset-2"
+            (click)="retry()"
+          >
+            Reintentar
+          </button>
+        </div>
+      }
+      <form class="shrink-0 border-t border-slate-200 bg-white p-4" (ngSubmit)="send()">
+        <label for="mc-chat-message" class="sr-only">Tu mensaje al asistente</label>
+        <div class="flex items-end gap-2">
+          <textarea
+            #composer
+            id="mc-chat-message"
+            [formControl]="draft"
+            rows="2"
+            maxlength="1000"
+            class="chat-composer resize-none"
+            placeholder="Escribe tu mensaje…"
+            (keydown)="onKeydown($event)"
+            aria-describedby="mc-chat-hint"
+          ></textarea>
+          <button
+            type="submit"
+            class="btn-primary flex h-11 w-11 shrink-0 items-center justify-center p-0"
+            aria-label="Enviar mensaje"
+            [disabled]="pending() || !draft.value.trim() || draft.invalid"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              class="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              aria-hidden="true"
+            >
+              <path
+                d="m4 4 17 8-17 8 3-8-3-8ZM7 12h14"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        <p id="mc-chat-hint" class="mt-2 text-[10px] text-slate-400">
+          Enter para enviar · Mayús + Enter para una nueva línea
+        </p>
+      </form>
+    </section>
+  }
+  <button
+    #launcher
+    type="button"
+    class="chat-launcher flex h-14 items-center justify-center gap-2 rounded-full border border-white/20 bg-sky-950 px-3 text-white shadow-xl transition hover:bg-sky-900 focus-visible:outline-2 focus-visible:outline-teal-500"
+    [attr.aria-expanded]="open()"
+    [attr.aria-controls]="open() ? 'mc-chat-panel' : null"
+    aria-haspopup="dialog"
+    [attr.aria-label]="open() ? 'Minimizar asistente de MediCore' : 'Abrir asistente de MediCore'"
+    (click)="toggle()"
+  >
+    <span class="chat-avatar h-11 w-11">
+      <img src="asistente-medicore.png" alt="" />
+    </span>
+    <span class="hidden pr-2 text-sm font-semibold sm:inline">¿Te ayudo?</span>
+  </button>
+</div>

@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from './rutas-aplicacion';
-import { Auth } from './nucleo/autenticacion';
+import { Auth, DEMO_PASSWORD } from './nucleo/autenticacion';
 import { DemoStore } from './nucleo/almacen-demostracion';
 import { seed } from './nucleo/datos-demostracion';
 import { Cares } from './modulos/servicios/atenciones';
@@ -12,6 +12,7 @@ import { By } from '@angular/platform-browser';
 import { Login } from './modulos/autenticacion/inicio-sesion';
 import { Agenda } from './modulos/admision/agenda';
 import { Dashboard } from './modulos/inicio/inicio';
+import { Shell } from './estructura/estructura-principal';
 
 describe('Páginas y permisos de MediCore', () => {
   beforeEach(() => {
@@ -41,12 +42,15 @@ describe('Páginas y permisos de MediCore', () => {
     ];
     for (const [url, title] of pages) {
       await harness.navigateByUrl(url);
+      expect(TestBed.inject(Router).url).toBe(url);
       expect(harness.routeNativeElement?.querySelector('h1')?.textContent, url).toContain(title);
     }
   });
   it('redirige usuarios sin sesión al acceso y bloquea módulos de otro rol', async () => {
     const harness = await RouterTestingHarness.create('/inventario/insumos');
-    expect(TestBed.inject(Router).url).toBe('/login');
+    expect(
+      TestBed.inject(Router).parseUrl(TestBed.inject(Router).url).queryParams['returnUrl'],
+    ).toBe('/inventario/insumos');
     TestBed.inject(Auth).login('ADMISION');
     await harness.navigateByUrl('/inventario/insumos');
     expect(TestBed.inject(Router).url).toBe('/inicio');
@@ -55,7 +59,8 @@ describe('Páginas y permisos de MediCore', () => {
   });
   it('permite abrir un formulario reactivo y registrar un paciente sin reiniciarlo al detectar cambios', async () => {
     TestBed.inject(Auth).login('ADMINISTRADOR');
-    const harness = await RouterTestingHarness.create('/admision/pacientes');
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/admision/pacientes');
     const page = harness.routeDebugElement!.query(By.directive(Patients))
       .componentInstance as Patients;
     page.open(null);
@@ -79,7 +84,8 @@ describe('Páginas y permisos de MediCore', () => {
   });
   it('abre una atención desde agenda y conserva solo citas propias para el médico', async () => {
     TestBed.inject(Auth).login('MEDICO', 1);
-    const harness = await RouterTestingHarness.create('/servicios/atenciones?cita=1');
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/servicios/atenciones?cita=1');
     const page = harness.routeDebugElement!.query(By.directive(Cares)).componentInstance as Cares;
     expect(page.editing()).toBe(true);
     expect(page.form.controls.citaId.value).toBe('1');
@@ -99,6 +105,7 @@ describe('Páginas y permisos de MediCore', () => {
     const harness = await RouterTestingHarness.create('/login');
     const login = harness.routeDebugElement!.componentInstance as Login;
     login.form.controls.role.setValue('MEDICO');
+    login.form.patchValue({ username: 'medico', password: DEMO_PASSWORD });
     harness.detectChanges();
     login.enter();
     expect(TestBed.inject(Auth).role()).toBeNull();
@@ -117,12 +124,14 @@ describe('Páginas y permisos de MediCore', () => {
     expect(restored.role()).toBe('MEDICO');
     expect(restored.medicoId()).toBe(2);
     await harness.navigateByUrl('/inicio');
-    const inicio = harness.routeDebugElement!.query(By.directive(Dashboard)).componentInstance as Dashboard;
+    const inicio = harness.routeDebugElement!.query(By.directive(Dashboard))
+      .componentInstance as Dashboard;
     expect(inicio.day().length).toBeGreaterThan(0);
     expect(inicio.day().every((a) => a.medicoId === 2)).toBe(true);
     expect(harness.routeNativeElement!.textContent).toContain(TestBed.inject(DemoStore).doctor(2));
     await harness.navigateByUrl('/admision/agenda');
-    const agenda = harness.routeDebugElement!.query(By.directive(Agenda)).componentInstance as Agenda;
+    const agenda = harness.routeDebugElement!.query(By.directive(Agenda))
+      .componentInstance as Agenda;
     expect(agenda.rows().length).toBeGreaterThan(0);
     expect(agenda.rows().every((a) => a.medicoId === 2)).toBe(true);
     await harness.navigateByUrl('/servicios/atenciones?cita=1');
@@ -133,5 +142,65 @@ describe('Páginas y permisos de MediCore', () => {
     auth.logout();
     expect(auth.medicoId()).toBeNull();
     expect(sessionStorage.getItem('medicore-medico')).toBeNull();
+  });
+  it('rechaza credenciales incorrectas y permite navegar entre módulos con un solo login', async () => {
+    const auth = TestBed.inject(Auth);
+    const harness = await RouterTestingHarness.create('/administracion/usuarios');
+    const login = harness.routeDebugElement!.componentInstance as Login;
+    expect(login.destinationName).toBe('Usuarios');
+    login.enter();
+    expect(login.form.invalid).toBe(true);
+    login.form.patchValue({ username: 'admin', password: 'incorrecta' });
+    login.enter();
+    harness.detectChanges();
+    expect(harness.routeNativeElement?.querySelector('[role="alert"]')?.textContent).toContain(
+      'incorrectos',
+    );
+    expect(TestBed.inject(Router).url).toContain('/login');
+    login.form.patchValue({ password: DEMO_PASSWORD });
+    login.enter();
+    await harness.fixture.whenStable();
+    expect(TestBed.inject(Router).url).toBe('/administracion/usuarios');
+    await harness.navigateByUrl('/administracion/finanzas');
+    expect(TestBed.inject(Router).url).toBe('/administracion/finanzas');
+    await harness.navigateByUrl('/inventario/insumos');
+    expect(TestBed.inject(Router).url).toBe('/inventario/insumos');
+    await harness.navigateByUrl('/inicio');
+    await harness.navigateByUrl('/administracion/usuarios');
+    expect(TestBed.inject(Router).url).toBe('/administracion/usuarios');
+    expect(auth.role()).toBe('ADMINISTRADOR');
+    (harness.routeDebugElement!.componentInstance as Shell).logout();
+    await harness.fixture.whenStable();
+    expect(TestBed.inject(Router).url).toBe('/login');
+    await harness.navigateByUrl('/administracion/usuarios');
+    expect(TestBed.inject(Router).url).toContain('/login');
+  });
+  it('restaura la sesión al recargar y mantiene la navegación sin pedir credenciales', async () => {
+    sessionStorage.setItem('medicore-role', 'INVENTARIO');
+    const harness = await RouterTestingHarness.create('/inventario/insumos');
+    expect(TestBed.inject(Auth).role()).toBe('INVENTARIO');
+    expect(TestBed.inject(Router).url).toBe('/inventario/insumos');
+    await harness.navigateByUrl('/inventario/movimientos');
+    expect(TestBed.inject(Router).url).toBe('/inventario/movimientos');
+    await harness.navigateByUrl('/administracion/usuarios');
+    expect(TestBed.inject(Router).url).toBe('/inicio');
+  });
+  it('conserva el destino al iniciar sesión y no permite redirecciones externas ni elevar permisos', async () => {
+    const harness = await RouterTestingHarness.create('/inventario/movimientos');
+    let login = harness.routeDebugElement!.componentInstance as Login;
+    login.form.patchValue({ role: 'INVENTARIO', username: 'inventario', password: DEMO_PASSWORD });
+    login.enter();
+    await harness.fixture.whenStable();
+    expect(TestBed.inject(Router).url).toBe('/inventario/movimientos');
+    await harness.navigateByUrl('/administracion/usuarios');
+    expect(TestBed.inject(Router).url).toBe('/inicio');
+    expect(TestBed.inject(Auth).role()).toBe('INVENTARIO');
+    TestBed.inject(Auth).logout();
+    await harness.navigateByUrl('/login?returnUrl=https%3A%2F%2Fexample.com');
+    login = harness.routeDebugElement!.componentInstance as Login;
+    login.form.patchValue({ username: 'admin', password: DEMO_PASSWORD });
+    login.enter();
+    await harness.fixture.whenStable();
+    expect(TestBed.inject(Router).url).toBe('/inicio');
   });
 });
