@@ -1,0 +1,58 @@
+@baseUrl = http://localhost:3000/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTM5MzQ4NjYsImV4cCI6MTc5MzkzODQ2Niwic3ViIjoiMiJ9.9QlxJ6FcMozVfzC19orxVZgm6zE6WH_tP_40p4rY348
+
+### Login administrador
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "nombre_usuario": "admin.demo",
+  "password": "Admin123!"
+}
+
+### Login Recepcion
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "nombre_usuario": "recepcion.demo",
+  "password": "Recepcion123!"
+}
+
+
+### Login médico
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "nombre_usuario": "elena.soto",
+  "password": "Medico123!"
+}
+
+### Login Inventario
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "nombre_usuario": "inventario.demo",
+  "password": "Inventario123!"
+}
+
+
+### 2. Consultar usuario autenticado
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+
+### 3. Ruta exclusiva de administradores
+GET {{baseUrl}}/auth/admin-test
+Authorization: Bearer {{token}}
+
+
+### 4. Ruta exclusiva de médicos
+GET {{baseUrl}}/auth/medical-test
+Authorization: Bearer {{token}}
+
+
+### 5. Probar acceso sin autenticación
+GET {{baseUrl}}/auth/me
