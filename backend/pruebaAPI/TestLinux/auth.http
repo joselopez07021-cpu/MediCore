@@ -1,5 +1,5 @@
 @baseUrl = http://localhost:3000/api
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTM5MzQ4NjYsImV4cCI6MTc5MzkzODQ2Niwic3ViIjoiMiJ9.9QlxJ6FcMozVfzC19orxVZgm6zE6WH_tP_40p4rY348
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTM5ODcwMzksImV4cCI6MTc5Mzk5MDYzOSwic3ViIjoiMyJ9.EBOV2ohef18WEWKoXYcBdupDFa6x4QHZfg7o_cmVixU
 
 ### Login administrador
 POST http://localhost:3000/api/auth/login
@@ -10,7 +10,7 @@ Content-Type: application/json
   "password": "Admin123!"
 }
 
-### Login Recepcion
+### Login Recepcion - ADMISION
 POST http://localhost:3000/api/auth/login
 Content-Type: application/json
 

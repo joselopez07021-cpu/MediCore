@@ -1,0 +1,127 @@
+@baseUrl = http://localhost:3000/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTQwMDEzMDMsImV4cCI6MTc5NDAwNDkwMywic3ViIjoiMiJ9.tazFPcIlL7JSxIFxMboX9jb1isuzLxww7W2tdFqho7s
+
+### Login administrador
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "nombre_usuario": "admin.demo",
+  "password": "Admin123!"
+}
+
+### Login Recepcion - ADMISION
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "nombre_usuario": "recepcion.demo",
+  "password": "Recepcion123!"
+}
+
+### Registrar paciente correctamente
+POST {{baseUrl}}/pacientes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Sofia",
+  "apellido": "Fernandez Demuz",
+  "identificacion": "76548897",
+  "fecha_nacimiento": "2000-02-25",
+  "telefono": "182676893",
+  "correo": "sophi@example.com"
+}
+
+
+### Probar identificación duplicada
+POST {{baseUrl}}/pacientes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "María José",
+  "apellido": "Rodríguez Castro",
+  "identificacion": "112345678",
+  "fecha_nacimiento": "1995-06-15",
+  "telefono": "88887777",
+  "correo": "maria@example.com"
+}
+
+
+### Probar campo obligatorio faltante
+POST {{baseUrl}}/pacientes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Carlos",
+  "identificacion": "99887766",
+  "fecha_nacimiento": "1990-03-12",
+  "telefono": "88889999",
+  "correo": "carlos@example.com"
+}
+
+################################
+###### RESTO DEL CRUD ##########
+################################
+@idPaciente = 1
+
+### READ - Listar todos
+GET {{baseUrl}}/pacientes
+Authorization: Bearer {{token}}
+
+
+### READ - Listar activos
+GET {{baseUrl}}/pacientes?activo=true
+Authorization: Bearer {{token}}
+
+
+### READ - Listar inactivos
+GET {{baseUrl}}/pacientes?activo=false
+Authorization: Bearer {{token}}
+
+
+### READ - Consultar por ID
+GET {{baseUrl}}/pacientes/{{idPaciente}}
+Authorization: Bearer {{token}}
+
+
+### UPDATE - Actualizar paciente
+PUT {{baseUrl}}/pacientes/{{idPaciente}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Anita",
+  "apellido": "Martinez Urb",
+  "identificacion": "23542521",
+  "fecha_nacimiento": "1997-08-11",
+  "telefono": "278392746",
+  "correo": "anita.actualizada@example.com"
+}
+
+
+### DELETE - Eliminación lógica
+DELETE {{baseUrl}}/pacientes/{{idPaciente}}
+Authorization: Bearer {{token}}
+
+
+### PATCH - Activar paciente
+PATCH {{baseUrl}}/pacientes/{{idPaciente}}/estado
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "activo": true
+}
+
+
+### PATCH - Desactivar paciente
+PATCH {{baseUrl}}/pacientes/{{idPaciente}}/estado
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "activo": false
+}
