@@ -1,0 +1,101 @@
+@baseUrl = http://localhost:3000/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTQwMjEyNzcsImV4cCI6MTc5NDAyNDg3Nywic3ViIjoiMiJ9.vUBj9vpZXa44hX-P94UE-fukDxqijOVWn10APLNAK9k
+@idCita = 1
+
+### Login Recepcion - ADMISION
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "nombre_usuario": "recepcion.demo",
+  "password": "Recepcion123!"
+}
+
+### Registrar cita médica
+POST {{baseUrl}}/citas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_paciente": "3",
+  "id_medico": "1",
+  "fecha": "2026-11-12",
+  "hora": "09:30",
+  "motivo": "Consulta de medicina general",
+  "estado": "PROGRAMADA"
+}
+
+
+### Probar conflicto de horario
+POST {{baseUrl}}/citas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_paciente": "2",
+  "id_medico": "1",
+  "fecha": "2026-11-12",
+  "hora": "09:45",
+  "motivo": "Consulta de seguimiento",
+  "estado": "PROGRAMADA"
+}
+
+
+### Probar otro horario disponible
+POST {{baseUrl}}/citas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_paciente": "2",
+  "id_medico": "1",
+  "fecha": "2026-11-12",
+  "hora": "10:00",
+  "motivo": "Consulta de seguimiento",
+  "estado": "PROGRAMADA"
+}
+
+
+### READ - Todas las citas
+GET {{baseUrl}}/citas
+Authorization: Bearer {{token}}
+
+
+### READ - Cita específica
+GET {{baseUrl}}/citas/{{idCita}}
+Authorization: Bearer {{token}}
+
+
+### UPDATE - Editar cita
+PUT {{baseUrl}}/citas/{{idCita}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_paciente": "3",
+  "id_medico": "1",
+  "fecha": "2026-11-13",
+  "hora": "10:30",
+  "motivo": "Consulta de seguimiento",
+  "estado": "PROGRAMADA"
+}
+
+
+### PATCH - Confirmar cita
+PATCH {{baseUrl}}/citas/{{idCita}}/estado
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "estado": "CONFIRMADA"
+}
+
+
+### PATCH - Cancelar cita
+PATCH {{baseUrl}}/citas/{{idCita}}/estado
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "estado": "CANCELADA"
+}
