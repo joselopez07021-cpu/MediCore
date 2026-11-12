@@ -1,0 +1,35 @@
+@baseUrl = http://localhost:3000/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTQ0NDY1ODUsImV4cCI6MTc5NDQ1MDE4NSwic3ViIjoiMiJ9.xMD2I8U-vOFInr2_GmGXxB5RMQsFgJuLAtk6Jlg7C9A
+
+### Login Recepcion - ADMISION
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "nombre_usuario": "recepcion.demo",
+  "password": "Recepcion123!"
+}
+
+### Agenda médica - Todas las citas del día
+GET {{baseUrl}}/citas/agenda?fecha=2026-11-13
+Authorization: Bearer {{token}}
+
+
+### Agenda médica - Citas del médico 1
+GET {{baseUrl}}/citas/agenda?fecha=2026-11-12&id_medico=1
+Authorization: Bearer {{token}}
+
+
+### Agenda médica - Citas del médico 2
+GET {{baseUrl}}/citas/agenda?fecha=2026-11-12&id_medico=2
+Authorization: Bearer {{token}}
+
+
+### Agenda médica - Fecha inválida
+GET {{baseUrl}}/citas/agenda?fecha=2026-02-30
+Authorization: Bearer {{token}}
+
+
+### Agenda médica - Sin fecha
+GET {{baseUrl}}/citas/agenda
+Authorization: Bearer {{token}}
