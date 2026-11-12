@@ -474,3 +474,48 @@ export const cambiarEstadoCita = async (id, estado) => {
         return citaAJson(actualizada);
     });
 };
+
+
+export const obtenerAgendaMedica = async (fecha, id_medico) => {
+
+    // Validar fecha obligatoria
+    if (
+        typeof fecha !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(fecha)
+    ) {
+        throw new CitaError(
+            "La fecha es obligatoria y debe tener formato YYYY-MM-DD"
+        );
+    }
+
+    // Calcular inicio del día en Costa Rica
+    const inicioDia = convertirFechaHora(fecha, "00:00");
+
+    // Calcular inicio del día siguiente
+    const finDia = new Date(
+        inicioDia.getTime() + 24 * 60 * 60 * 1000
+    );
+
+    // Filtro principal: citas del día
+    const where = {
+        fecha_hora_inicio: {
+            gte: inicioDia,
+            lt: finDia
+        }
+    };
+
+    // Filtro opcional: médico específico
+    if (id_medico !== undefined) {
+        where.id_medico = validarId(id_medico, "id_medico");
+    }
+
+    const citas = await prisma.citas.findMany({
+        where,
+        include: incluirRelaciones,
+        orderBy: {
+            fecha_hora_inicio: "asc"
+        }
+    });
+
+    return citas.map(citaAJson);
+};

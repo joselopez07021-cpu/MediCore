@@ -5,7 +5,8 @@ import {
     obtenerCitas,
     obtenerCitaPorId,
     editarCita,
-    actualizarEstadoCita
+    actualizarEstadoCita,
+    consultarAgendaMedica
 } from "../controllers/citas.controller.js";
 
 import { autenticar } from "../middlewares/auth.middleware.js";
@@ -21,6 +22,8 @@ router.post("/", crearCita);
 
 // READ
 router.get("/", obtenerCitas);
+// Agenda médica: filtrar por fecha y opcionalmente por médico
+router.get("/agenda", consultarAgendaMedica);
 router.get("/:id", obtenerCitaPorId);
 
 // UPDATE
@@ -28,5 +31,6 @@ router.put("/:id", editarCita);
 
 // Cambiar estado
 router.patch("/:id/estado", actualizarEstadoCita);
+
 
 export default router;

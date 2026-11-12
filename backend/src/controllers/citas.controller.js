@@ -6,6 +6,7 @@ import {
     obtenerCita,
     actualizarCita,
     cambiarEstadoCita,
+    obtenerAgendaMedica,
     CitaError
 } from "../services/citas.service.js";
 
@@ -101,6 +102,25 @@ export const actualizarEstadoCita = async (req, res) => {
             message: "Estado de la cita actualizado correctamente",
             data: cita
         });
+    } catch (error) {
+        return manejarError(error, res);
+    }
+};
+
+export const consultarAgendaMedica = async (req, res) => {
+    try {
+        const { fecha, id_medico } = req.query;
+
+        const citas = await obtenerAgendaMedica(
+            fecha,
+            id_medico
+        );
+
+        return res.status(200).json({
+            message: "Agenda médica obtenida correctamente",
+            data: citas
+        });
+
     } catch (error) {
         return manejarError(error, res);
     }

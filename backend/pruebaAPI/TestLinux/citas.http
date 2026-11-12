@@ -1,5 +1,5 @@
 @baseUrl = http://localhost:3000/api
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTQwMjEyNzcsImV4cCI6MTc5NDAyNDg3Nywic3ViIjoiMiJ9.vUBj9vpZXa44hX-P94UE-fukDxqijOVWn10APLNAK9k
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTQ0NDY1ODUsImV4cCI6MTc5NDQ1MDE4NSwic3ViIjoiMiJ9.xMD2I8U-vOFInr2_GmGXxB5RMQsFgJuLAtk6Jlg7C9A
 @idCita = 1
 
 ### Login Recepcion - ADMISION
