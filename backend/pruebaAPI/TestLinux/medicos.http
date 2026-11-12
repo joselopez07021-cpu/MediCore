@@ -1,0 +1,30 @@
+@baseUrl = http://localhost:3000/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTQ0NDgwNTgsImV4cCI6MTc5NDQ1MTY1OCwic3ViIjoiMiJ9.RTChxTL10bFDcr4MZXQQ9CFAdE18MHCnEYtwwvDWojg
+
+### Login Recepcion - ADMISION
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "nombre_usuario": "recepcion.demo",
+  "password": "Recepcion123!"
+}
+
+### Obtener todos los médicos
+GET {{baseUrl}}/medicos
+Authorization: Bearer {{token}}
+
+
+### Obtener médicos activos
+GET {{baseUrl}}/medicos?activo=true
+Authorization: Bearer {{token}}
+
+
+### Obtener médicos inactivos
+GET {{baseUrl}}/medicos?activo=false
+Authorization: Bearer {{token}}
+
+
+### Probar filtro inválido
+GET {{baseUrl}}/medicos?activo=true
+Authorization: Bearer {{token}}

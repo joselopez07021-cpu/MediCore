@@ -6,6 +6,7 @@ import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import pacientesRoutes from "./routes/pacientes.routes.js";
 import citasRoutes from "./routes/citas.routes.js";
+import medicosRoutes from "./routes/medicos.routes.js";
 
 const app = express();
 
@@ -22,5 +23,6 @@ app.use("/api/health", healthRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/pacientes", pacientesRoutes);
 app.use("/api/citas", citasRoutes);
+app.use("/api/medicos", medicosRoutes);
 
 export default app;
