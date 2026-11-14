@@ -4,8 +4,11 @@ import { Observable } from 'rxjs';
 import { API_CONFIG } from '../nucleo/configuracion-api';
 
 interface ApiResponse {
-  mensaje: string;
-  estado: string;
+  status: number;
+  message: string;
+  data: {
+    database: string;
+  } | null;
 }
 
 @Injectable({
@@ -17,6 +20,6 @@ export class Api {
   private apiUrl = API_CONFIG.baseUrl;
 
   verificarConexion(): Observable<ApiResponse> {
-    return this.http.get<ApiResponse>(this.apiUrl);
+    return this.http.get<ApiResponse>(`${this.apiUrl}/health`);
   }
 }

@@ -1,16 +1,30 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { DemoStore } from '../../nucleo/almacen-demostracion';
 import { Auth } from '../../nucleo/autenticacion';
 import { today } from '../../nucleo/datos-demostracion';
 import { StatusBadge } from '../../compartidos/indicador-estado';
+import { Api } from '../../servicios/servicio-api';
 @Component({
   standalone: true,
   imports: [RouterLink, DatePipe, StatusBadge],
   templateUrl: './inicio.html',
 })
-export class Dashboard {
+export class Dashboard implements OnInit {
+  private api = inject(Api);
+estadoConexion = signal('Comprobando conexión...');
+  ngOnInit(): void {
+  this.api.verificarConexion().subscribe({
+    next: (respuesta) => {
+      this.estadoConexion.set(respuesta.message);
+    },
+    error: () => {
+      this.estadoConexion.set('No se pudo comprobar la conexión con el backend.');
+    },
+  });
+}
+
   store = inject(DemoStore);
   auth = inject(Auth);
   date = new Date();
