@@ -5,11 +5,11 @@
 # Los endpoints marcados PENDIENTE requieren implementar el módulo completo.
 
 @baseUrl = http://localhost:3000/api
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUyMDQ2NDcsImV4cCI6MTc5NTIwODI0Nywic3ViIjoiMyJ9.qzV1UW2JGaDTysFP81wEusQ6fFI1CMsKwI_Yo-Gt0h0
-@fecha = 2026-11-20
-@fechaDesde = 2026-11-01
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUyMTUwMTAsImV4cCI6MTc5NTIxODYxMCwic3ViIjoiMyJ9.2H26eDmcHh7iKI4OKIYvbSZrmPcx6TD1b411VQOKp4o
+@fecha = 2026-12-03
+@fechaDesde = 2026-01-01
 @fechaHasta = 2026-11-30
-@idCita = 5
+@idCita = 49
 @idAtencion = 1
 @idMedico = 1
 @idPaciente = 1
@@ -47,7 +47,7 @@ Content-Type: application/json
 GET {{baseUrl}}/atenciones/servicios
 Authorization: Bearer {{token}}
 
-### PENDIENTE - Catálogos de servicios e insumos disponibles
+### Catálogos de servicios e insumos disponibles
 GET {{baseUrl}}/atenciones/catalogos
 Authorization: Bearer {{token}}
 
@@ -167,7 +167,7 @@ Content-Type: application/json
   ]
 }
 
-### PENDIENTE - Rechazar servicio repetido
+###  Rechazar servicio repetido
 POST {{baseUrl}}/atenciones
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -239,7 +239,7 @@ GET {{baseUrl}}/atenciones/paginados?page=1&id_paciente={{idPaciente}}
 Authorization: Bearer {{token}}
 
 ### Historial filtrado por nombre de paciente
-GET {{baseUrl}}/atenciones/paginados?page=1&paciente=Carlos
+GET {{baseUrl}}/atenciones/paginados?page=1&paciente=Rojas
 Authorization: Bearer {{token}}
 
 ### Historial filtrado por diagnóstico
