@@ -1,0 +1,11 @@
+#+title: Readme
+
+* Pasos
+** Instalar pnpm
+** Instalar postgresql
+** Migrar Base de datos desde prisma
+#+begin_src bash
+pnpm install
+pnpm exec prisma migrate deploy
+pnpm exec prisma generate
+#+end_src
