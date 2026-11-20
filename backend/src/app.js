@@ -13,6 +13,7 @@ import {
 } from "./routes/insumos.routes.js";
 
 import movimientosInventarioRoutes from "./routes/movimientos-inventario.routes.js";
+import atencionesRoutes from "./routes/atenciones.routes.js";
 
 const app = express();
 
@@ -34,5 +35,6 @@ app.use("/api/medicos", medicosRoutes);
 app.use("/api/insumos", insumosRoutes);
 app.use("/api/categorias-insumos", categoriasInsumosRoutes);
 app.use("/api/movimientos-inventario", movimientosInventarioRoutes);
+app.use("/api/atenciones", atencionesRoutes);
 
 export default app;

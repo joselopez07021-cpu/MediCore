@@ -18,7 +18,7 @@ import { autorizar } from "../middlewares/roles.middleware.js";
 const router = Router();
 
 router.use(autenticar);
-router.use(autorizar("ADMINISTRADOR", "ADMISION"));
+router.use(autorizar("ADMINISTRADOR", "ADMISION", "MEDICO"));
 
 // CREATE
 router.post("/", crearCita);
