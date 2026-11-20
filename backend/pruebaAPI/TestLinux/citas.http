@@ -1,5 +1,5 @@
 @baseUrl = http://localhost:3000/api
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTQ0NDY1ODUsImV4cCI6MTc5NDQ1MDE4NSwic3ViIjoiMiJ9.xMD2I8U-vOFInr2_GmGXxB5RMQsFgJuLAtk6Jlg7C9A
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUxOTQxODgsImV4cCI6MTc5NTE5Nzc4OCwic3ViIjoiMiJ9.W9NCcYiH6c_Dp-5V_Ttgpi7zOgaXO05S5jNxSOxk2ac
 @idCita = 1
 
 ### Login Recepcion - ADMISION
@@ -19,8 +19,8 @@ Content-Type: application/json
 {
   "id_paciente": "3",
   "id_medico": "1",
-  "fecha": "2026-11-12",
-  "hora": "09:30",
+  "fecha": "2026-11-20",
+  "hora": "19:30",
   "motivo": "Consulta de medicina general",
   "estado": "PROGRAMADA"
 }
@@ -34,8 +34,8 @@ Content-Type: application/json
 {
   "id_paciente": "2",
   "id_medico": "1",
-  "fecha": "2026-11-12",
-  "hora": "09:45",
+  "fecha": "2026-11-20",
+  "hora": "19:45",
   "motivo": "Consulta de seguimiento",
   "estado": "PROGRAMADA"
 }
@@ -49,8 +49,8 @@ Content-Type: application/json
 {
   "id_paciente": "2",
   "id_medico": "1",
-  "fecha": "2026-11-12",
-  "hora": "10:00",
+  "fecha": "2026-11-20",
+  "hora": "12:00",
   "motivo": "Consulta de seguimiento",
   "estado": "PROGRAMADA"
 }
@@ -58,6 +58,15 @@ Content-Type: application/json
 
 ### READ - Todas las citas
 GET {{baseUrl}}/citas
+Authorization: Bearer {{token}}
+
+
+### Citas - Página 1
+GET {{baseUrl}}/citas/paginados?page=1
+Authorization: Bearer {{token}}
+
+### Citas - Página 2
+GET {{baseUrl}}/citas/paginados?page=2
 Authorization: Bearer {{token}}
 
 
@@ -74,7 +83,7 @@ Content-Type: application/json
 {
   "id_paciente": "3",
   "id_medico": "1",
-  "fecha": "2026-11-13",
+  "fecha": "2026-11-20",
   "hora": "10:30",
   "motivo": "Consulta de seguimiento",
   "estado": "PROGRAMADA"

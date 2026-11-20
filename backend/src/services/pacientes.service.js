@@ -1,4 +1,9 @@
+// pacientes.service.js
 import prisma from "../config/prisma.js";
+import {
+    obtenerPaginacion,
+    construirPaginacion
+} from "./paginacion.utils.js";
 
 export class PacienteError extends Error {
   constructor(message, status = 400) {
@@ -7,6 +12,22 @@ export class PacienteError extends Error {
     this.status = status;
   }
 }
+
+const construirFiltroPacientes = (activo) => {
+    const where = {};
+
+    if (activo !== undefined) {
+        if (activo !== "true" && activo !== "false") {
+            throw new PacienteError(
+                "El parámetro activo debe ser true o false"
+            );
+        }
+
+        where.activo = activo === "true";
+    }
+
+    return where;
+};
 
 const pacienteAJson = (paciente) => ({
   id_paciente: paciente.id_paciente.toString(),
@@ -159,28 +180,53 @@ export const registrarPaciente = async (datos) => {
 };
 
 export const listarPacientes = async (activo) => {
-  const where = {};
+    const where = construirFiltroPacientes(activo);
 
-  if (activo !== undefined) {
-    if (activo !== "true" && activo !== "false") {
-      throw new PacienteError(
-        "El parámetro activo debe ser true o false"
-      );
-    }
+    const pacientes = await prisma.pacientes.findMany({
+        where,
+        orderBy: {
+            id_paciente: "asc"
+        }
+    });
 
-    where.activo = activo === "true";
-  }
-
-  const pacientes = await prisma.pacientes.findMany({
-    where,
-    orderBy: {
-      id_paciente: "asc"
-    }
-  });
-
-  return pacientes.map(pacienteAJson);
+    return pacientes.map(pacienteAJson);
 };
 
+
+export const listarPacientesPaginados = async (filtros = {}) => {
+    const { pagina, limite, skip } = obtenerPaginacion(
+        filtros.page ?? "1",
+        10
+    );
+
+    const where = construirFiltroPacientes(
+        filtros.activo
+    );
+
+    const [total, pacientes] = await Promise.all([
+        prisma.pacientes.count({
+            where
+        }),
+
+        prisma.pacientes.findMany({
+            where,
+            orderBy: {
+                id_paciente: "asc"
+            },
+            skip,
+            take: limite
+        })
+    ]);
+
+    return {
+        data: pacientes.map(pacienteAJson),
+        paginacion: construirPaginacion(
+            pagina,
+            limite,
+            total
+        )
+    };
+};
 
 export const obtenerPaciente = async (id) => {
     const idPaciente = validarIdPaciente(id);

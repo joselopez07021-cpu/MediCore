@@ -1,4 +1,9 @@
+// citas.service.js
 import prisma from "../config/prisma.js";
+import {
+  obtenerPaginacion,
+  construirPaginacion
+} from "./paginacion.utils.js";
 
 export class CitaError extends Error {
     constructor(message, status = 400) {
@@ -261,6 +266,40 @@ export const listarCitas = async () => {
 };
 
 
+export const listarCitasPaginadas = async (filtros = {}) => {
+    const { pagina, limite, skip } = obtenerPaginacion(
+        filtros.page ?? "1",
+        8
+    );
+
+    const where = {};
+
+    const [total, citas] = await Promise.all([
+        prisma.citas.count({ where }),
+
+        prisma.citas.findMany({
+            where,
+            include: incluirRelaciones,
+            orderBy: [
+                { fecha_hora_inicio: "desc" },
+                { id_cita: "desc" }
+            ],
+            skip,
+            take: limite
+        })
+    ]);
+
+    return {
+        data: citas.map(citaAJson),
+        paginacion: construirPaginacion(
+            pagina,
+            limite,
+            total
+        )
+    };
+};
+
+
 export const obtenerCita = async (id) => {
     const idCita = validarId(id, "id_cita");
 
@@ -476,9 +515,7 @@ export const cambiarEstadoCita = async (id, estado) => {
 };
 
 
-export const obtenerAgendaMedica = async (fecha, id_medico) => {
-
-    // Validar fecha obligatoria
+const construirFiltroAgenda = (fecha, id_medico) => {
     if (
         typeof fecha !== "string" ||
         !/^\d{4}-\d{2}-\d{2}$/.test(fecha)
@@ -488,15 +525,13 @@ export const obtenerAgendaMedica = async (fecha, id_medico) => {
         );
     }
 
-    // Calcular inicio del día en Costa Rica
+    // Inicio del día en Costa Rica, convertido a UTC.
     const inicioDia = convertirFechaHora(fecha, "00:00");
 
-    // Calcular inicio del día siguiente
     const finDia = new Date(
         inicioDia.getTime() + 24 * 60 * 60 * 1000
     );
 
-    // Filtro principal: citas del día
     const where = {
         fecha_hora_inicio: {
             gte: inicioDia,
@@ -504,18 +539,71 @@ export const obtenerAgendaMedica = async (fecha, id_medico) => {
         }
     };
 
-    // Filtro opcional: médico específico
     if (id_medico !== undefined) {
-        where.id_medico = validarId(id_medico, "id_medico");
+        where.id_medico = validarId(
+            id_medico,
+            "id_medico"
+        );
     }
+
+    return where;
+};
+
+
+
+export const obtenerAgendaMedica = async (fecha, id_medico) => {
+    const where = construirFiltroAgenda(
+        fecha,
+        id_medico
+    );
 
     const citas = await prisma.citas.findMany({
         where,
         include: incluirRelaciones,
-        orderBy: {
-            fecha_hora_inicio: "asc"
-        }
+        orderBy: [
+            { fecha_hora_inicio: "asc" },
+            { id_cita: "asc" }
+        ]
     });
 
     return citas.map(citaAJson);
+};
+
+
+export const listarAgendaPaginada = async (filtros = {}) => {
+    const { fecha, id_medico } = filtros;
+
+    const { pagina, limite, skip } = obtenerPaginacion(
+        filtros.page ?? "1",
+        8
+    );
+
+    const where = construirFiltroAgenda(
+        fecha,
+        id_medico
+    );
+
+    const [total, citas] = await Promise.all([
+        prisma.citas.count({ where }),
+
+        prisma.citas.findMany({
+            where,
+            include: incluirRelaciones,
+            orderBy: [
+                { fecha_hora_inicio: "asc" },
+                { id_cita: "asc" }
+            ],
+            skip,
+            take: limite
+        })
+    ]);
+
+    return {
+        data: citas.map(citaAJson),
+        paginacion: construirPaginacion(
+            pagina,
+            limite,
+            total
+        )
+    };
 };

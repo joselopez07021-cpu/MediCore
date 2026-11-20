@@ -1,5 +1,5 @@
 @baseUrl = http://localhost:3000/api
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTQwMDEzMDMsImV4cCI6MTc5NDAwNDkwMywic3ViIjoiMiJ9.tazFPcIlL7JSxIFxMboX9jb1isuzLxww7W2tdFqho7s
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUxOTU4MTksImV4cCI6MTc5NTE5OTQxOSwic3ViIjoiMiJ9.MQPjJEoLPqgWpV-PLHqTSGkPe7XyiDhBT0hNbe6HO8c
 
 ### Login administrador
 POST http://localhost:3000/api/auth/login
@@ -25,12 +25,12 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "nombre": "Sofia",
-  "apellido": "Fernandez Demuz",
-  "identificacion": "76548897",
-  "fecha_nacimiento": "2000-02-25",
-  "telefono": "182676893",
-  "correo": "sophi@example.com"
+  "nombre": "Sonia",
+  "apellido": "Guadaluz Moer",
+  "identificacion": "77263892",
+  "fecha_nacimiento": "2010-02-25",
+  "telefono": "882676893",
+  "correo": "soni@example.com"
 }
 
 
@@ -84,6 +84,41 @@ Authorization: Bearer {{token}}
 
 ### READ - Consultar por ID
 GET {{baseUrl}}/pacientes/{{idPaciente}}
+Authorization: Bearer {{token}}
+
+
+### Pacientes - Primera página
+GET {{baseUrl}}/pacientes/paginados?page=1
+Authorization: Bearer {{token}}
+
+
+### Pacientes - Segunda página
+GET {{baseUrl}}/pacientes/paginados?page=2
+Authorization: Bearer {{token}}
+
+
+### Pacientes - Tercera página
+GET {{baseUrl}}/pacientes/paginados?page=3
+Authorization: Bearer {{token}}
+
+
+### Pacientes - Solo activos
+GET {{baseUrl}}/pacientes/paginados?page=1&activo=true
+Authorization: Bearer {{token}}
+
+
+### Pacientes - Solo inactivos
+GET {{baseUrl}}/pacientes/paginados?page=1&activo=false
+Authorization: Bearer {{token}}
+
+
+### Pacientes - Página inválida
+GET {{baseUrl}}/pacientes/paginados?page=0
+Authorization: Bearer {{token}}
+
+
+### Pacientes - Página inexistente
+GET {{baseUrl}}/pacientes/paginados?page=999
 Authorization: Bearer {{token}}
 
 

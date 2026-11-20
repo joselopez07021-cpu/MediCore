@@ -1,5 +1,5 @@
 @baseUrl = http://localhost:3000/api
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUxMjU1MjAsImV4cCI6MTc5NTEyOTEyMCwic3ViIjoiMiJ9.UT5K1jJxndu8i6Q-p5KbNHwzqmPfK4iSqDNe4OUux3A
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUxOTQ0MTEsImV4cCI6MTc5NTE5ODAxMSwic3ViIjoiMiJ9.vdBQg-__Hh_8oTJcbzEEgU8inRO9gK1dNmfKH4zJflQ
 
 ### Login Recepcion - ADMISION
 POST http://localhost:3000/api/auth/login
@@ -11,8 +11,25 @@ Content-Type: application/json
 }
 
 ### Agenda médica - Todas las citas del día
-GET {{baseUrl}}/citas/agenda?fecha=2026-11-13
+GET {{baseUrl}}/citas/agenda?fecha=2026-11-20
 Authorization: Bearer {{token}}
+
+### Agenda médica - Página 1
+GET {{baseUrl}}/citas/agenda/paginados?fecha=2026-11-20&page=1
+Authorization: Bearer {{token}}
+
+### Agenda médica - Página 2
+GET {{baseUrl}}/citas/agenda/paginados?fecha=2026-11-20&page=2
+Authorization: Bearer {{token}}
+
+### Agenda médica - Filtrar por médico
+GET {{baseUrl}}/citas/agenda/paginados?fecha=2026-11-20&id_medico=1&page=1
+Authorization: Bearer {{token}}
+
+### Agenda médica - Fecha inválida
+GET {{baseUrl}}/citas/agenda/paginados?fecha=2026-02-30&page=1
+Authorization: Bearer {{token}}
+
 
 
 ### Agenda médica - Citas del médico 1

@@ -1,4 +1,4 @@
-export const obtenerPaginacion = (page = "1") => {
+export const obtenerPaginacion = (page = "1", limite = 10) => {
   if (
     typeof page !== "string" ||
     !/^[1-9]\d*$/.test(page)
@@ -12,7 +12,6 @@ export const obtenerPaginacion = (page = "1") => {
     throw new Error("Número de página inválido");
   }
 
-  const limite = 10;
   const skip = (pagina - 1) * limite;
 
   if (!Number.isSafeInteger(skip)) {

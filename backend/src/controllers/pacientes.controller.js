@@ -1,8 +1,10 @@
+// pacientes.controller.js
 import { Prisma } from "@prisma/client";
 
 import {
     registrarPaciente,
     listarPacientes,
+    listarPacientesPaginados,
     obtenerPaciente,
     actualizarPaciente,
     eliminarPaciente,
@@ -11,6 +13,18 @@ import {
 } from "../services/pacientes.service.js";
 
 const manejarError = (error, res) => {
+
+    if (
+        error instanceof RangeError ||
+        error.message === "El número de página debe ser un entero positivo" ||
+        error.message === "Número de página inválido" ||
+        error.message === "Número de página fuera de rango"
+    ) {
+        return res.status(400).json({
+            message: error.message
+        });
+    }
+
     if (error instanceof PacienteError) {
         return res.status(error.status).json({
             message: error.message
@@ -62,6 +76,21 @@ export const obtenerPacientes = async (req, res) => {
         return res.status(200).json({
             message: "Pacientes obtenidos correctamente",
             data: pacientes
+        });
+    } catch (error) {
+        return manejarError(error, res);
+    }
+};
+
+export const obtenerPacientesPaginados = async (req, res) => {
+    try {
+        const resultado = await listarPacientesPaginados(
+            req.query
+        );
+
+        return res.status(200).json({
+            message: "Pacientes obtenidos correctamente",
+            ...resultado
         });
     } catch (error) {
         return manejarError(error, res);

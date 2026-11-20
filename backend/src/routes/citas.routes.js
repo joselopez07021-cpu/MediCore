@@ -1,3 +1,4 @@
+// citas.routes.js
 import { Router } from "express";
 
 import {
@@ -5,6 +6,8 @@ import {
     obtenerCitas,
     obtenerCitaPorId,
     editarCita,
+    obtenerCitasPaginadas,
+    obtenerAgendaPaginada,
     actualizarEstadoCita,
     consultarAgendaMedica
 } from "../controllers/citas.controller.js";
@@ -20,10 +23,15 @@ router.use(autorizar("ADMINISTRADOR", "ADMISION"));
 // CREATE
 router.post("/", crearCita);
 
-// READ
+// READ - Citas
 router.get("/", obtenerCitas);
-// Agenda médica: filtrar por fecha y opcionalmente por médico
+router.get("/paginados", obtenerCitasPaginadas);
+
+// READ - Agenda médica
 router.get("/agenda", consultarAgendaMedica);
+router.get("/agenda/paginados", obtenerAgendaPaginada);
+
+// READ - Cita individual
 router.get("/:id", obtenerCitaPorId);
 
 // UPDATE
@@ -31,6 +39,5 @@ router.put("/:id", editarCita);
 
 // Cambiar estado
 router.patch("/:id/estado", actualizarEstadoCita);
-
 
 export default router;

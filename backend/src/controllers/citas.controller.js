@@ -1,16 +1,29 @@
+// citas.controller.js
 import { Prisma } from "@prisma/client";
 
 import {
     registrarCita,
     listarCitas,
+    listarCitasPaginadas,
     obtenerCita,
     actualizarCita,
     cambiarEstadoCita,
     obtenerAgendaMedica,
+    listarAgendaPaginada,
     CitaError
 } from "../services/citas.service.js";
 
 const manejarError = (error, res) => {
+    if (
+        error instanceof RangeError ||
+        error.message?.startsWith("El número de página") ||
+        error.message === "Número de página inválido"
+    ) {
+        return res.status(400).json({
+            message: error.message
+        });
+    }
+
     if (error instanceof CitaError) {
         return res.status(error.status).json({
             message: error.message
@@ -101,6 +114,37 @@ export const actualizarEstadoCita = async (req, res) => {
         return res.status(200).json({
             message: "Estado de la cita actualizado correctamente",
             data: cita
+        });
+    } catch (error) {
+        return manejarError(error, res);
+    }
+};
+
+
+export const obtenerCitasPaginadas = async (req, res) => {
+    try {
+        const resultado = await listarCitasPaginadas(
+            req.query
+        );
+
+        return res.status(200).json({
+            message: "Citas obtenidas correctamente",
+            ...resultado
+        });
+    } catch (error) {
+        return manejarError(error, res);
+    }
+};
+
+export const obtenerAgendaPaginada = async (req, res) => {
+    try {
+        const resultado = await listarAgendaPaginada(
+            req.query
+        );
+
+        return res.status(200).json({
+            message: "Agenda médica obtenida correctamente",
+            ...resultado
         });
     } catch (error) {
         return manejarError(error, res);
