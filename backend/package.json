@@ -9,7 +9,8 @@
     "start": "node src/server.js",
     "dbPull": "prisma db pull",
     "dbGenerate": "prisma generate",
-    "dbStudio": "prisma studio"
+    "dbStudio": "prisma studio",
+    "dbSeed": "node prisma/seeds/principal.seed.js"
   },
   "keywords": [],
   "author": "",
