@@ -1,11 +1,258 @@
-#+title: Readme
 
-* Pasos
-** Instalar pnpm
-** Instalar postgresql
-** Migrar Base de datos desde prisma
+#+title: MediCore - Backend
+#+author: Equipo MediCore
+#+startup: overview
+
+* Requisitos previos
+
+Para ejecutar MediCore en Windows 11 se necesita:
+
+- Git
+- Node.js 24
+- pnpm 11
+- PostgreSQL 18
+- Visual Studio Code (recomendado)
+
+** 1. Instalar Git
+
+Descargar Git para Windows:
+
+https://git-scm.com/downloads/win
+
+Verificar desde Git Bash:
+
 #+begin_src bash
+git --version
+#+end_src
+
+** 2. Instalar Node.js
+
+Descargar Node.js 24:
+
+https://nodejs.org/
+
+Verificar:
+
+#+begin_src bash
+node --version
+npm --version
+#+end_src
+
+** 3. Instalar pnpm
+
+Desde Git Bash:
+
+#+begin_src bash
+npm install -g pnpm@11
+pnpm --version
+#+end_src
+
+** 4. Instalar PostgreSQL
+
+Descargar PostgreSQL:
+
+https://www.postgresql.org/download/windows/
+
+Durante la instalación:
+
+- Utilizar el puerto 5432.
+- Configurar una contraseña para el usuario postgres.
+- Instalar las herramientas de línea de comandos.
+- Recordar la contraseña configurada.
+
+Se recomienda PostgreSQL 18.
+
+Para verificar la instalación, abrir SQL Shell (psql):
+
+#+begin_src sql
+SELECT version();
+#+end_src
+
+* Configuración del proyecto
+
+** 1. Clonar el repositorio
+
+Desde Git Bash:
+
+#+begin_src bash
+git clone URL_DEL_REPOSITORIO
+cd NOMBRE_DEL_REPOSITORIO/backend
+#+end_src
+
+Reemplazar los valores por la dirección y carpeta reales.
+
+Si el repositorio es privado, se necesita acceso en GitHub.
+
+** 2. Instalar dependencias
+
+Desde la carpeta backend:
+
+#+begin_src bash
+pnpm install
+#+end_src
+
+** 3. Crear la base de datos
+
+Abrir SQL Shell (psql) e iniciar sesión como postgres.
+
+#+begin_src sql
+CREATE DATABASE medicore_demo;
+#+end_src
+
+Comprobar:
+
+#+begin_src sql
+\l
+#+end_src
+
+** 4. Configurar variables de entorno
+
+En la raíz de backend, crear el archivo .env.
+
+Si existe .env.example, copiarlo:
+
+#+begin_src bash
+cp .env.example .env
+#+end_src
+
+Configurar:
+
+#+begin_src conf
+DATABASE_URL="postgresql://postgres:TU_CONTRASENA@localhost:5432/medicore_demo"
+PORT=3000
+NODE_ENV=development
+#+end_src
+
+Reemplazar TU_CONTRASENA por la contraseña real de PostgreSQL.
+
+Si contiene caracteres especiales, codificarlos para una URL.
+
+IMPORTANTE: Nunca subir .env a GitHub.
+
+** 5. Ejecutar migraciones de Prisma
+
+#+begin_src bash
+pnpm exec prisma migrate deploy
+#+end_src
+
+Este comando crea las tablas, relaciones, índices y restricciones
+de la base de datos a partir de las migraciones del repositorio.
+
+No es necesario importar manualmente el SQL original.
+
+** 6. Generar Prisma Client
+
+#+begin_src bash
+pnpm exec prisma generate
+#+end_src
+
+** 7. Cargar datos de demostración
+
+#+begin_src bash
+pnpm run dbSeed
+#+end_src
+
+Se cargarán datos ficticios de:
+
+- Roles y usuarios.
+- Médicos y pacientes.
+- Categorías y servicios hospitalarios.
+- Insumos.
+- Citas y atenciones.
+- Consumos y movimientos de inventario.
+
+Estas semillas deben utilizarse únicamente en bases de desarrollo
+o demostración.
+
+** 8. Iniciar el servidor
+
+#+begin_src bash
+pnpm run dev
+#+end_src
+
+El puerto configurado en .env se utilizará si el servidor
+está implementado para leer la variable PORT.
+
+* Comandos útiles
+
+** Iniciar el backend
+
+#+begin_src bash
+pnpm run dev
+#+end_src
+
+** Instalar dependencias
+
+#+begin_src bash
+pnpm install
+#+end_src
+
+** Aplicar migraciones pendientes
+
+#+begin_src bash
+pnpm exec prisma migrate deploy
+#+end_src
+
+** Generar Prisma Client
+
+#+begin_src bash
+pnpm exec prisma generate
+#+end_src
+
+** Ejecutar semillas
+
+#+begin_src bash
+pnpm run dbSeed
+#+end_src
+
+** Abrir Prisma Studio
+
+#+begin_src bash
+pnpm exec prisma studio
+#+end_src
+
+** Consultar el estado de las migraciones
+
+#+begin_src bash
+pnpm exec prisma migrate status
+#+end_src
+
+* Trabajo en equipo
+
+** Recomendaciones
+
+- No subir .env ni contraseñas a GitHub.
+- No modificar manualmente la estructura de PostgreSQL.
+- Compartir cambios de estructura mediante migraciones de Prisma.
+- No ejecutar prisma migrate reset sobre bases con datos importantes.
+- Utilizar ramas de Git para desarrollar funcionalidades.
+- Mantener actualizadas las dependencias y migraciones.
+
+** Actualizar el proyecto
+
+Antes de comenzar a trabajar, actualizar la rama correspondiente.
+
+Por ejemplo, si se trabaja en develop:
+
+#+begin_src bash
+git switch develop
+git pull origin develop
 pnpm install
 pnpm exec prisma migrate deploy
 pnpm exec prisma generate
 #+end_src
+
+No ejecutar dbSeed sobre bases que contengan información real.
+
+* Resumen de instalación
+
+1. Instalar Git, Node.js, pnpm y PostgreSQL.
+2. Clonar el repositorio.
+3. Entrar a la carpeta backend.
+4. Ejecutar pnpm install.
+5. Crear la base medicore_demo.
+6. Configurar el archivo .env.
+7. Ejecutar pnpm exec prisma migrate deploy.
+8. Ejecutar pnpm exec prisma generate.
+9. Ejecutar pnpm run dbSeed.
+10. Ejecutar pnpm run dev.
