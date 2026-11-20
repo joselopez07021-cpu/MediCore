@@ -1,0 +1,161 @@
+@baseUrl = http://localhost:3000/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUxNDcwMjEsImV4cCI6MTc5NTE1MDYyMSwic3ViIjoiNSJ9.LCiFjkQiwyD-aLz9xQOMoRWvHfyh9MFzllHsTERGbuE
+@idInsumo = 1
+
+### Login Inventario
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "nombre_usuario": "inventario.demo",
+  "password": "Inventario123!"
+}
+
+### Obtener categorías
+GET {{baseUrl}}/categorias-insumos
+Authorization: Bearer {{token}}
+
+
+### Listar insumos
+GET {{baseUrl}}/insumos
+Authorization: Bearer {{token}}
+
+
+### Buscar insumos
+GET {{baseUrl}}/insumos?buscar=gasa
+Authorization: Bearer {{token}}
+
+
+### Filtrar existencias bajas
+GET {{baseUrl}}/insumos?existencias_bajas=true
+Authorization: Bearer {{token}}
+
+
+### Resumen de inventario
+GET {{baseUrl}}/insumos/resumen
+Authorization: Bearer {{token}}
+
+
+### Consultar insumo
+GET {{baseUrl}}/insumos/{{idInsumo}}
+Authorization: Bearer {{token}}
+
+
+### Crear insumo
+POST {{baseUrl}}/insumos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "algodon estérilizado",
+  "id_categoria": "1",
+  "unidad_medida": "unidad",
+  "stock_minimo": 30
+}
+
+
+### Editar insumo
+PUT {{baseUrl}}/insumos/{{idInsumo}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Gasas estériles grandes",
+  "id_categoria": "1",
+  "unidad_medida": "unidad",
+  "stock_minimo": 40
+}
+
+
+### Registrar entrada
+POST {{baseUrl}}/movimientos-inventario
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_insumo": "{{idInsumo}}",
+  "tipo_movimiento": "ENTRADA",
+  "cantidad": 100,
+  "motivo": "Compra de insumos médicos"
+}
+
+
+### Registrar salida
+POST {{baseUrl}}/movimientos-inventario
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_insumo": "{{idInsumo}}",
+  "tipo_movimiento": "SALIDA",
+  "cantidad": 15,
+  "motivo": "Material retirado del almacén"
+}
+
+
+### Listar movimientos
+GET {{baseUrl}}/movimientos-inventario
+Authorization: Bearer {{token}}
+
+
+### Filtrar salidas
+GET {{baseUrl}}/movimientos-inventario?tipo=SALIDA
+Authorization: Bearer {{token}}
+
+### Filtrar entradas
+GET {{baseUrl}}/movimientos-inventario?tipo=ENTRADA
+Authorization: Bearer {{token}}
+
+
+### Eliminar lógicamente un insumo
+DELETE {{baseUrl}}/insumos/{{idInsumo}}
+Authorization: Bearer {{token}}
+
+#########################################
+# PAGINADOS
+#########################################
+
+
+### Insumos - Primera página
+GET {{baseUrl}}/insumos/paginados?page=1
+Authorization: Bearer {{token}}
+
+
+### Insumos - Segunda página
+GET {{baseUrl}}/insumos/paginados?page=2
+Authorization: Bearer {{token}}
+
+
+### Insumos - Buscar con paginación
+GET {{baseUrl}}/insumos/paginados?page=1&buscar=gasas
+Authorization: Bearer {{token}}
+
+
+### Insumos - Solo existencias bajas
+GET {{baseUrl}}/insumos/paginados?page=1&existencias_bajas=true
+Authorization: Bearer {{token}}
+
+
+### Resumen del inventario
+GET {{baseUrl}}/insumos/resumen
+Authorization: Bearer {{token}}
+
+
+### Movimientos - Primera página
+GET {{baseUrl}}/movimientos-inventario/paginados?page=1
+Authorization: Bearer {{token}}
+
+
+### Movimientos - Segunda página
+GET {{baseUrl}}/movimientos-inventario/paginados?page=2
+Authorization: Bearer {{token}}
+
+
+### Movimientos - Solo salidas
+GET {{baseUrl}}/movimientos-inventario/paginados?page=1&tipo=SALIDA
+Authorization: Bearer {{token}}
+
+
+### Movimientos - Buscar por insumo o motivo
+GET {{baseUrl}}/movimientos-inventario/paginados?page=1&buscar=alcohol
+Authorization: Bearer {{token}}

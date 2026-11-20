@@ -1,5 +1,5 @@
 @baseUrl = http://localhost:3000/api
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTQ0NDY1ODUsImV4cCI6MTc5NDQ1MDE4NSwic3ViIjoiMiJ9.xMD2I8U-vOFInr2_GmGXxB5RMQsFgJuLAtk6Jlg7C9A
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUxMjU1MjAsImV4cCI6MTc5NTEyOTEyMCwic3ViIjoiMiJ9.UT5K1jJxndu8i6Q-p5KbNHwzqmPfK4iSqDNe4OUux3A
 
 ### Login Recepcion - ADMISION
 POST http://localhost:3000/api/auth/login
@@ -21,7 +21,7 @@ Authorization: Bearer {{token}}
 
 
 ### Agenda médica - Citas del médico 2
-GET {{baseUrl}}/citas/agenda?fecha=2026-11-12&id_medico=2
+GET {{baseUrl}}/citas/agenda?fecha=2026-11-12&id_medico=1
 Authorization: Bearer {{token}}
 
 
