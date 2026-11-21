@@ -3,6 +3,7 @@ import { Router } from "express";
 import {
     crearPaciente,
     obtenerPacientes,
+    obtenerPacientesPaginados,
     obtenerPacientePorId,
     editarPaciente,
     borrarPaciente,
@@ -14,7 +15,7 @@ import { autorizar } from "../middlewares/roles.middleware.js";
 
 const router = Router();
 
-// Todos los endpoints requieren autenticación y rol autorizado
+// Autenticación y autorización
 router.use(autenticar);
 router.use(autorizar("ADMINISTRADOR", "ADMISION"));
 
@@ -23,6 +24,7 @@ router.post("/", crearPaciente);
 
 // READ
 router.get("/", obtenerPacientes);
+router.get("/paginados", obtenerPacientesPaginados);
 router.get("/:id", obtenerPacientePorId);
 
 // UPDATE

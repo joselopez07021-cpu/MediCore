@@ -1,0 +1,72 @@
+@baseUrl = http://localhost:3000/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUyMTcyOTYsImV4cCI6MTc5NTIyMDg5Niwic3ViIjoiMSJ9.1FMx85ZJFZTqDxbmDef3OXQEJH68LuWnMBh6gaFMUT0
+
+### Login administrador
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "nombre_usuario": "admin.demo",
+  "password": "Admin123!"
+}
+
+
+### PROPUESTO - Resumen de citas por estado
+GET {{baseUrl}}/citas/resumen
+Authorization: Bearer {{token}}
+
+### PROPUESTO - Resumen de citas por período
+GET {{baseUrl}}/citas/resumen?fecha_desde=2026-01-01&fecha_hasta=2026-11-30
+Authorization: Bearer {{token}}
+
+### VERIFICAR - Resumen de atenciones
+GET {{baseUrl}}/atenciones/resumen
+Authorization: Bearer {{token}}
+
+### VERIFICAR - Servicios y conteo de atenciones
+GET {{baseUrl}}/atenciones/servicios
+Authorization: Bearer {{token}}
+
+### PROPUESTO - Búsqueda de servicios
+GET {{baseUrl}}/atenciones/servicios?buscar=cardio
+Authorization: Bearer {{token}}
+
+### VERIFICAR - Resumen de inventario
+GET {{baseUrl}}/insumos/resumen
+Authorization: Bearer {{token}}
+
+### PROPUESTO - Filtrar insumos por categoría
+GET {{baseUrl}}/insumos/paginados?page=1&id_categoria=1
+Authorization: Bearer {{token}}
+
+### PROPUESTO - Resumen de pantalla inicial
+GET {{baseUrl}}/inicio/resumen
+Authorization: Bearer {{token}}
+
+### Resumen general
+GET {{baseUrl}}/citas/resumen
+Authorization: Bearer {{token}}
+
+### Resumen por período
+GET {{baseUrl}}/citas/resumen?fecha_desde=2026-01-01&fecha_hasta=2026-11-30
+Authorization: Bearer {{token}}
+
+GET {{baseUrl}}/citas/resumen?fecha_desde=2026-01-01
+Authorization: Bearer {{token}}
+
+### Resumen de un médico
+GET {{baseUrl}}/citas/resumen?id_medico=1
+Authorization: Bearer {{token}}
+
+### Fecha inválida - ERROR
+GET {{baseUrl}}/citas/resumen?fecha_desde=2026-02-30
+Authorization: Bearer {{token}}
+
+### Resumen de la pantalla principal
+GET {{baseUrl}}/inicio/resumen
+Authorization: Bearer {{token}}
+
+### Resumen de citas
+GET {{baseUrl}}/citas/resumen
+Authorization: Bearer {{token}}
+

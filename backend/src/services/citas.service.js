@@ -1,4 +1,9 @@
+// citas.service.js
 import prisma from "../config/prisma.js";
+import {
+  obtenerPaginacion,
+  construirPaginacion
+} from "./paginacion.utils.js";
 
 export class CitaError extends Error {
     constructor(message, status = 400) {
@@ -261,6 +266,40 @@ export const listarCitas = async () => {
 };
 
 
+export const listarCitasPaginadas = async (filtros = {}) => {
+    const { pagina, limite, skip } = obtenerPaginacion(
+        filtros.page ?? "1",
+        8
+    );
+
+    const where = {};
+
+    const [total, citas] = await Promise.all([
+        prisma.citas.count({ where }),
+
+        prisma.citas.findMany({
+            where,
+            include: incluirRelaciones,
+            orderBy: [
+                { fecha_hora_inicio: "desc" },
+                { id_cita: "desc" }
+            ],
+            skip,
+            take: limite
+        })
+    ]);
+
+    return {
+        data: citas.map(citaAJson),
+        paginacion: construirPaginacion(
+            pagina,
+            limite,
+            total
+        )
+    };
+};
+
+
 export const obtenerCita = async (id) => {
     const idCita = validarId(id, "id_cita");
 
@@ -476,9 +515,7 @@ export const cambiarEstadoCita = async (id, estado) => {
 };
 
 
-export const obtenerAgendaMedica = async (fecha, id_medico) => {
-
-    // Validar fecha obligatoria
+const construirFiltroAgenda = (fecha, id_medico) => {
     if (
         typeof fecha !== "string" ||
         !/^\d{4}-\d{2}-\d{2}$/.test(fecha)
@@ -488,15 +525,13 @@ export const obtenerAgendaMedica = async (fecha, id_medico) => {
         );
     }
 
-    // Calcular inicio del día en Costa Rica
+    // Inicio del día en Costa Rica, convertido a UTC.
     const inicioDia = convertirFechaHora(fecha, "00:00");
 
-    // Calcular inicio del día siguiente
     const finDia = new Date(
         inicioDia.getTime() + 24 * 60 * 60 * 1000
     );
 
-    // Filtro principal: citas del día
     const where = {
         fecha_hora_inicio: {
             gte: inicioDia,
@@ -504,18 +539,179 @@ export const obtenerAgendaMedica = async (fecha, id_medico) => {
         }
     };
 
-    // Filtro opcional: médico específico
     if (id_medico !== undefined) {
-        where.id_medico = validarId(id_medico, "id_medico");
+        where.id_medico = validarId(
+            id_medico,
+            "id_medico"
+        );
     }
+
+    return where;
+};
+
+
+
+export const obtenerAgendaMedica = async (fecha, id_medico) => {
+    const where = construirFiltroAgenda(
+        fecha,
+        id_medico
+    );
 
     const citas = await prisma.citas.findMany({
         where,
         include: incluirRelaciones,
-        orderBy: {
-            fecha_hora_inicio: "asc"
-        }
+        orderBy: [
+            { fecha_hora_inicio: "asc" },
+            { id_cita: "asc" }
+        ]
     });
 
     return citas.map(citaAJson);
 };
+
+
+export const listarAgendaPaginada = async (filtros = {}) => {
+    const { fecha, id_medico } = filtros;
+
+    const { pagina, limite, skip } = obtenerPaginacion(
+        filtros.page ?? "1",
+        8
+    );
+
+    const where = construirFiltroAgenda(
+        fecha,
+        id_medico
+    );
+
+    const [total, citas] = await Promise.all([
+        prisma.citas.count({ where }),
+
+        prisma.citas.findMany({
+            where,
+            include: incluirRelaciones,
+            orderBy: [
+                { fecha_hora_inicio: "asc" },
+                { id_cita: "asc" }
+            ],
+            skip,
+            take: limite
+        })
+    ]);
+
+    return {
+        data: citas.map(citaAJson),
+        paginacion: construirPaginacion(
+            pagina,
+            limite,
+            total
+        )
+    };
+};
+
+const ESTADOS_CITA = [
+  "PROGRAMADA",
+  "CONFIRMADA",
+  "ATENDIDA",
+  "CANCELADA",
+  "NO_ASISTIO",
+];
+
+function fechaValida(valor) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(valor)) return false;
+
+  const fecha = new Date(`${valor}T00:00:00.000Z`);
+
+  return (
+    !Number.isNaN(fecha.getTime()) &&
+    fecha.toISOString().slice(0, 10) === valor
+  );
+}
+
+// MediCore opera en horario de Costa Rica (UTC-06:00).
+// Costa Rica no utiliza horario de verano.
+function inicioDiaCostaRica(valor) {
+  return new Date(`${valor}T06:00:00.000Z`);
+}
+
+function siguienteDiaCostaRica(valor) {
+  const fecha = inicioDiaCostaRica(valor);
+  fecha.setUTCDate(fecha.getUTCDate() + 1);
+  return fecha;
+}
+
+function construirFiltrosResumen(query) {
+  const { fecha_desde, fecha_hasta, id_medico } = query;
+  const where = {};
+
+  if (fecha_desde && !fechaValida(fecha_desde)) {
+    const error = new Error("fecha_desde debe tener formato YYYY-MM-DD");
+    error.status = 400;
+    throw error;
+  }
+
+  if (fecha_hasta && !fechaValida(fecha_hasta)) {
+    const error = new Error("fecha_hasta debe tener formato YYYY-MM-DD");
+    error.status = 400;
+    throw error;
+  }
+
+  if (fecha_desde && fecha_hasta && fecha_desde > fecha_hasta) {
+    const error = new Error("fecha_desde no puede superar fecha_hasta");
+    error.status = 400;
+    throw error;
+  }
+
+  if (fecha_desde || fecha_hasta) {
+    where.fecha_hora_inicio = {};
+
+    if (fecha_desde) {
+      where.fecha_hora_inicio.gte = inicioDiaCostaRica(fecha_desde);
+    }
+
+    if (fecha_hasta) {
+      where.fecha_hora_inicio.lt = siguienteDiaCostaRica(fecha_hasta);
+    }
+  }
+
+  if (id_medico !== undefined) {
+    if (!/^[1-9]\d*$/.test(String(id_medico))) {
+      const error = new Error("id_medico debe ser un ID válido");
+      error.status = 400;
+      throw error;
+    }
+
+    where.id_medico = BigInt(id_medico);
+  }
+
+  return where;
+}
+
+
+export async function obtenerResumenCitas(query = {}) {
+  const where = construirFiltrosResumen(query);
+
+  const resultados = await prisma.citas.groupBy({
+    by: ["estado"],
+    where,
+    _count: {
+      _all: true,
+    },
+  });
+
+  const porEstado = Object.fromEntries(
+    ESTADOS_CITA.map((estado) => [estado, 0]),
+  );
+
+  for (const resultado of resultados) {
+    porEstado[resultado.estado] = resultado._count._all;
+  }
+
+  return {
+    total: Object.values(porEstado).reduce(
+      (total, cantidad) => total + cantidad,
+      0,
+    ),
+    por_estado: porEstado,
+  };
+}
+

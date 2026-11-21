@@ -1,0 +1,320 @@
+# atencion-citas.http
+# MediCore - Pruebas de Atención Médica
+# REST Client (VS Code)
+# Sustituir el token, los IDs y las fechas por datos reales.
+# Ejecutar las pruebas de lectura antes de las de escritura.
+# Los endpoints marcados PENDIENTE requieren implementar el módulo completo.
+
+@baseUrl = http://localhost:3000/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUyMTUwMTAsImV4cCI6MTc5NTIxODYxMCwic3ViIjoiMyJ9.2H26eDmcHh7iKI4OKIYvbSZrmPcx6TD1b411VQOKp4o
+@fecha = 2026-12-03
+@fechaDesde = 2026-01-01
+@fechaHasta = 2026-11-30
+@idCita = 49
+@idAtencion = 1
+@idMedico = 1
+@idPaciente = 1
+@idServicio = 1
+@idInsumo = 1
+
+##############################################
+############ AUTENTICACIÓN ###################
+##############################################
+
+### Login administrador
+# @name loginAdmin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "nombre_usuario": "admin.demo",
+  "password": "Admin123!"
+}
+
+### Login médico
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "nombre_usuario": "elena.soto",
+  "password": "Medico123!"
+}
+
+##############################################
+############ CATÁLOGOS #######################
+##############################################
+
+### IMPLEMENTADO PASO 1 - Servicios hospitalarios activos
+GET {{baseUrl}}/atenciones/servicios
+Authorization: Bearer {{token}}
+
+GET {{baseUrl}}/atenciones/servicios?buscar=cardio
+Authorization: Bearer {{token}}
+
+### Catálogos de servicios e insumos disponibles
+GET {{baseUrl}}/atenciones/catalogos
+Authorization: Bearer {{token}}
+
+##############################################
+############ AGENDA Y PENDIENTES #############
+##############################################
+
+### Agenda médica existente para una fecha
+GET {{baseUrl}}/citas/agenda?fecha={{fecha}}
+Authorization: Bearer {{token}}
+
+### Agenda médica existente filtrada por médico
+GET {{baseUrl}}/citas/agenda?fecha={{fecha}}&id_medico={{idMedico}}
+Authorization: Bearer {{token}}
+
+###  Citas pendientes de atención del médico autenticado
+GET {{baseUrl}}/atenciones/pendientes?fecha={{fecha}}
+Authorization: Bearer {{token}}
+
+### TODAS Citas pendientes de atención del médico autenticado
+GET {{baseUrl}}/atenciones/pendientes
+Authorization: Bearer {{token}}
+
+###  Resumen de atenciones y citas pendientes
+GET {{baseUrl}}/atenciones/resumen
+Authorization: Bearer {{token}}
+
+##############################################
+############ REGISTRAR ATENCIÓN ##############
+##############################################
+
+### Registrar atención completa
+# Usar una cita elegible sin atención previa y con existencias suficientes.
+# ATENCIÓN: esta petición modifica inventario y estado de la cita.
+POST {{baseUrl}}/atenciones
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_cita": "{{idCita}}",
+  "diagnostico": "Infección respiratoria leve",
+  "notas": "Paciente estable. Se recomienda seguimiento.",
+  "servicios": [
+    {
+      "id_servicio": "{{idServicio}}",
+      "cantidad": 1
+    }
+  ],
+  "insumos": [
+    {
+      "id_insumo": "{{idInsumo}}",
+      "cantidad": 1
+    }
+  ]
+}
+
+###  Intentar registrar de nuevo la misma cita (debe rechazarse)
+# Ejecutar solo después de haber registrado la atención anterior.
+POST {{baseUrl}}/atenciones
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_cita": "{{idCita}}",
+  "diagnostico": "Intento duplicado",
+  "notas": "No debe generar una segunda atención ni nuevos consumos.",
+  "servicios": [],
+  "insumos": []
+}
+
+### Rechazar cita con ID inválido
+POST {{baseUrl}}/atenciones
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_cita": "abc",
+  "diagnostico": "Prueba de validación",
+  "notas": "ID inválido",
+  "servicios": [],
+  "insumos": []
+}
+
+###  Rechazar cantidad negativa
+POST {{baseUrl}}/atenciones
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_cita": "{{idCita}}",
+  "diagnostico": "Prueba de validación",
+  "notas": "No debe modificar inventario",
+  "servicios": [],
+  "insumos": [
+    {
+      "id_insumo": "{{idInsumo}}",
+      "cantidad": -1
+    }
+  ]
+}
+
+###  Rechazar cantidad cero
+POST {{baseUrl}}/atenciones
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_cita": "{{idCita}}",
+  "diagnostico": "Prueba de validación",
+  "notas": "No debe modificar inventario",
+  "servicios": [],
+  "insumos": [
+    {
+      "id_insumo": "{{idInsumo}}",
+      "cantidad": 0
+    }
+  ]
+}
+
+###  Rechazar servicio repetido
+POST {{baseUrl}}/atenciones
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_cita": "{{idCita}}",
+  "diagnostico": "Prueba de servicio duplicado",
+  "notas": "No debe registrar duplicados",
+  "servicios": [
+    { "id_servicio": "{{idServicio}}", "cantidad": 1 },
+    { "id_servicio": "{{idServicio}}", "cantidad": 1 }
+  ],
+  "insumos": []
+}
+
+### Rechazar insumo repetido
+POST {{baseUrl}}/atenciones
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_cita": "{{idCita}}",
+  "diagnostico": "Prueba de insumo duplicado",
+  "notas": "No debe descontar dos veces inesperadamente",
+  "servicios": [],
+  "insumos": [
+    { "id_insumo": "{{idInsumo}}", "cantidad": 1 },
+    { "id_insumo": "{{idInsumo}}", "cantidad": 1 }
+  ]
+}
+
+### Rechazar cantidad superior al stock
+# Usar una cita diferente todavía pendiente si ya se registró @idCita.
+POST {{baseUrl}}/atenciones
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "id_cita": "{{idCita}}",
+  "diagnostico": "Prueba de stock insuficiente",
+  "notas": "Debe revertirse toda la transacción",
+  "servicios": [],
+  "insumos": [
+    {
+      "id_insumo": "{{idInsumo}}",
+      "cantidad": 999999999
+    }
+  ]
+}
+
+##############################################
+############ HISTORIAL Y FILTROS #############
+##############################################
+
+### Historial, página 1
+GET {{baseUrl}}/atenciones/paginados?page=1
+Authorization: Bearer {{token}}
+
+### Historial, página 2
+GET {{baseUrl}}/atenciones/paginados?page=2
+Authorization: Bearer {{token}}
+
+### Historial filtrado por médico (solo admin puede consultar otros)
+GET {{baseUrl}}/atenciones/paginados?page=1&id_medico={{idMedico}}
+Authorization: Bearer {{token}}
+
+### Historial filtrado por ID de paciente
+GET {{baseUrl}}/atenciones/paginados?page=1&id_paciente={{idPaciente}}
+Authorization: Bearer {{token}}
+
+### Historial filtrado por nombre de paciente
+GET {{baseUrl}}/atenciones/paginados?page=1&paciente=Rojas
+Authorization: Bearer {{token}}
+
+### Historial filtrado por diagnóstico
+GET {{baseUrl}}/atenciones/paginados?page=1&diagnostico=respiratoria
+Authorization: Bearer {{token}}
+
+### Historial filtrado por fechas
+GET {{baseUrl}}/atenciones/paginados?page=1&fecha_desde={{fechaDesde}}&fecha_hasta={{fechaHasta}}
+Authorization: Bearer {{token}}
+
+### Todos los filtros combinados
+GET {{baseUrl}}/atenciones/paginados?page=1&id_medico={{idMedico}}&id_paciente={{idPaciente}}&diagnostico=respiratoria&fecha_desde={{fechaDesde}}&fecha_hasta={{fechaHasta}}
+Authorization: Bearer {{token}}
+
+### Página inválida (esperado 400)
+GET {{baseUrl}}/atenciones/paginados?page=0
+Authorization: Bearer {{token}}
+
+### Página inexistente (data vacío)
+GET {{baseUrl}}/atenciones/paginados?page=999
+Authorization: Bearer {{token}}
+
+##############################################
+############ DETALLE DE ATENCIÓN #############
+##############################################
+
+### Detalle para modal: diagnóstico, notas, servicios e insumos
+GET {{baseUrl}}/atenciones/{{idAtencion}}
+Authorization: Bearer {{token}}
+
+### PENDIENTE - Detalle con ID inexistente (esperado 404)
+GET {{baseUrl}}/atenciones/999999999
+Authorization: Bearer {{token}}
+
+### PENDIENTE - Detalle con ID inválido (esperado 400)
+GET {{baseUrl}}/atenciones/abc
+Authorization: Bearer {{token}}
+
+##############################################
+############ VERIFICAR EFECTOS ###############
+##############################################
+
+### Comprobar que la cita cambió a ATENDIDA
+GET {{baseUrl}}/citas/{{idCita}}
+Authorization: Bearer {{token}}
+
+### Comprobar existencias del insumo tras el consumo
+GET {{baseUrl}}/insumos
+Authorization: Bearer {{token}}
+
+### Comprobar que existe un movimiento SALIDA
+GET {{baseUrl}}/movimientos-inventario
+Authorization: Bearer {{token}}
+
+##############################################
+############ AUTENTICACIÓN Y SEGURIDAD #######
+##############################################
+
+### Sin token (esperado 401)
+GET {{baseUrl}}/atenciones/servicios
+
+### Token inválido (esperado 401)
+GET {{baseUrl}}/atenciones/servicios
+Authorization: Bearer token_invalido
+
+### Ruta inexistente (esperado 404 con token válido)
+GET {{baseUrl}}/atenciones/ruta-inexistente
+Authorization: Bearer {{token}}
+
+# Para probar permisos por médico, usar tokens reales de dos usuarios MEDICO:
+# - Médico A consulta sus atenciones: permitido.
+# - Médico A solicita atenciones del médico B: no debe ver datos ajenos.
+# - Médico A intenta registrar atención de cita del médico B: debe rechazarse.
+# - ADMINISTRADOR consulta el historial de ambos médicos: permitido.
