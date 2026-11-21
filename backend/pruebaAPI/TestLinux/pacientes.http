@@ -1,3 +1,4 @@
+# pacientes.http
 @baseUrl = http://localhost:3000/api
 @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUxOTU4MTksImV4cCI6MTc5NTE5OTQxOSwic3ViIjoiMiJ9.MQPjJEoLPqgWpV-PLHqTSGkPe7XyiDhBT0hNbe6HO8c
 

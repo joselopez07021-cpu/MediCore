@@ -7,25 +7,29 @@ import authRoutes from "./routes/auth.routes.js";
 import pacientesRoutes from "./routes/pacientes.routes.js";
 import citasRoutes from "./routes/citas.routes.js";
 import medicosRoutes from "./routes/medicos.routes.js";
+
 import {
-    insumosRoutes,
-    categoriasInsumosRoutes
+  insumosRoutes,
+  categoriasInsumosRoutes,
 } from "./routes/insumos.routes.js";
 
 import movimientosInventarioRoutes from "./routes/movimientos-inventario.routes.js";
 import atencionesRoutes from "./routes/atenciones.routes.js";
+import { inicioRutas } from "./routes/inicio.routes.js";
 
 const app = express();
 
 app.disable("x-powered-by");
 
-app.use(cors({
-    origin: "http://localhost:4200"
-}));
+app.use(
+  cors({
+    origin: "http://localhost:4200",
+  }),
+);
 
-// app.use(express.json({ limit: "100kb" }));
 app.use(express.json());
 
+// Rutas de la API
 app.use("/api/health", healthRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/pacientes", pacientesRoutes);
@@ -36,5 +40,8 @@ app.use("/api/insumos", insumosRoutes);
 app.use("/api/categorias-insumos", categoriasInsumosRoutes);
 app.use("/api/movimientos-inventario", movimientosInventarioRoutes);
 app.use("/api/atenciones", atencionesRoutes);
+
+// Pantalla principal
+app.use("/api/inicio", inicioRutas);
 
 export default app;

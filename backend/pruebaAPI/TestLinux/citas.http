@@ -1,3 +1,4 @@
+# citas.http
 @baseUrl = http://localhost:3000/api
 @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUxOTQxODgsImV4cCI6MTc5NTE5Nzc4OCwic3ViIjoiMiJ9.W9NCcYiH6c_Dp-5V_Ttgpi7zOgaXO05S5jNxSOxk2ac
 @idCita = 1

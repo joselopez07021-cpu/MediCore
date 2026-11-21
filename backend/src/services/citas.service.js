@@ -607,3 +607,111 @@ export const listarAgendaPaginada = async (filtros = {}) => {
         )
     };
 };
+
+const ESTADOS_CITA = [
+  "PROGRAMADA",
+  "CONFIRMADA",
+  "ATENDIDA",
+  "CANCELADA",
+  "NO_ASISTIO",
+];
+
+function fechaValida(valor) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(valor)) return false;
+
+  const fecha = new Date(`${valor}T00:00:00.000Z`);
+
+  return (
+    !Number.isNaN(fecha.getTime()) &&
+    fecha.toISOString().slice(0, 10) === valor
+  );
+}
+
+// MediCore opera en horario de Costa Rica (UTC-06:00).
+// Costa Rica no utiliza horario de verano.
+function inicioDiaCostaRica(valor) {
+  return new Date(`${valor}T06:00:00.000Z`);
+}
+
+function siguienteDiaCostaRica(valor) {
+  const fecha = inicioDiaCostaRica(valor);
+  fecha.setUTCDate(fecha.getUTCDate() + 1);
+  return fecha;
+}
+
+function construirFiltrosResumen(query) {
+  const { fecha_desde, fecha_hasta, id_medico } = query;
+  const where = {};
+
+  if (fecha_desde && !fechaValida(fecha_desde)) {
+    const error = new Error("fecha_desde debe tener formato YYYY-MM-DD");
+    error.status = 400;
+    throw error;
+  }
+
+  if (fecha_hasta && !fechaValida(fecha_hasta)) {
+    const error = new Error("fecha_hasta debe tener formato YYYY-MM-DD");
+    error.status = 400;
+    throw error;
+  }
+
+  if (fecha_desde && fecha_hasta && fecha_desde > fecha_hasta) {
+    const error = new Error("fecha_desde no puede superar fecha_hasta");
+    error.status = 400;
+    throw error;
+  }
+
+  if (fecha_desde || fecha_hasta) {
+    where.fecha_hora_inicio = {};
+
+    if (fecha_desde) {
+      where.fecha_hora_inicio.gte = inicioDiaCostaRica(fecha_desde);
+    }
+
+    if (fecha_hasta) {
+      where.fecha_hora_inicio.lt = siguienteDiaCostaRica(fecha_hasta);
+    }
+  }
+
+  if (id_medico !== undefined) {
+    if (!/^[1-9]\d*$/.test(String(id_medico))) {
+      const error = new Error("id_medico debe ser un ID válido");
+      error.status = 400;
+      throw error;
+    }
+
+    where.id_medico = BigInt(id_medico);
+  }
+
+  return where;
+}
+
+
+export async function obtenerResumenCitas(query = {}) {
+  const where = construirFiltrosResumen(query);
+
+  const resultados = await prisma.citas.groupBy({
+    by: ["estado"],
+    where,
+    _count: {
+      _all: true,
+    },
+  });
+
+  const porEstado = Object.fromEntries(
+    ESTADOS_CITA.map((estado) => [estado, 0]),
+  );
+
+  for (const resultado of resultados) {
+    porEstado[resultado.estado] = resultado._count._all;
+  }
+
+  return {
+    total: Object.values(porEstado).reduce(
+      (total, cantidad) => total + cantidad,
+      0,
+    ),
+    por_estado: porEstado,
+  };
+}
+

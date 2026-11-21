@@ -1,3 +1,4 @@
+# medicos.http
 @baseUrl = http://localhost:3000/api
 @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTQ0NDgwNTgsImV4cCI6MTc5NDQ1MTY1OCwic3ViIjoiMiJ9.RTChxTL10bFDcr4MZXQQ9CFAdE18MHCnEYtwwvDWojg
 

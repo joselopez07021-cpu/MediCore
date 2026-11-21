@@ -1,3 +1,4 @@
+// atenciones.service.js
 import { Prisma } from "@prisma/client";
 import prisma from "../config/prisma.js";
 
@@ -200,10 +201,72 @@ export const listarCatalogosAtencion = async () => {
   };
 };
 
-export const listarServiciosHospitalarios = async () => {
-  const catalogos = await listarCatalogosAtencion();
-  return catalogos.servicios;
-};
+// export const listarServiciosHospitalarios = async () => {
+//   const catalogos = await listarCatalogosAtencion();
+//   return catalogos.servicios;
+// };
+export async function listarServiciosHospitalarios(filtros = {}) {
+  const buscar = filtros.buscar?.trim();
+
+  const servicios = await prisma.servicios_hospitalarios.findMany({
+    where: {
+      activo: true,
+
+      ...(buscar && {
+        OR: [
+          {
+            nombre: {
+              contains: buscar,
+              mode: "insensitive",
+            },
+          },
+          {
+            codigo: {
+              contains: buscar,
+              mode: "insensitive",
+            },
+          },
+          {
+            descripcion: {
+              contains: buscar,
+              mode: "insensitive",
+            },
+          },
+        ],
+      }),
+    },
+
+    select: {
+      id_servicio: true,
+      codigo: true,
+      nombre: true,
+      descripcion: true,
+      duracion_estimada_minutos: true,
+
+      _count: {
+        select: {
+          detalle_atencion_servicios: true,
+        },
+      },
+    },
+
+    orderBy: {
+      nombre: "asc",
+    },
+  });
+
+  return servicios.map((servicio) => ({
+    id_servicio: servicio.id_servicio.toString(),
+    codigo: servicio.codigo,
+    nombre: servicio.nombre,
+    descripcion: servicio.descripcion,
+    duracion_estimada_minutos:
+      servicio.duracion_estimada_minutos,
+    total_atenciones:
+      servicio._count.detalle_atencion_servicios,
+  }));
+}
+
 
 export const obtenerCitaParaAtencion = async (id, usuario) => {
   const ctx = await contextoUsuario(usuario);

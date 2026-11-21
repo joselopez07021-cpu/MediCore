@@ -2,14 +2,15 @@
 import { Router } from "express";
 
 import {
-    crearCita,
-    obtenerCitas,
-    obtenerCitaPorId,
-    editarCita,
-    obtenerCitasPaginadas,
-    obtenerAgendaPaginada,
-    actualizarEstadoCita,
-    consultarAgendaMedica
+  crearCita,
+  obtenerCitas,
+  obtenerCitaPorId,
+  editarCita,
+  obtenerCitasPaginadas,
+  obtenerAgendaPaginada,
+  actualizarEstadoCita,
+  consultarAgendaMedica,
+  resumenCitas
 } from "../controllers/citas.controller.js";
 
 import { autenticar } from "../middlewares/auth.middleware.js";
@@ -30,6 +31,7 @@ router.get("/paginados", obtenerCitasPaginadas);
 // READ - Agenda médica
 router.get("/agenda", consultarAgendaMedica);
 router.get("/agenda/paginados", obtenerAgendaPaginada);
+router.get("/resumen", resumenCitas);
 
 // READ - Cita individual
 router.get("/:id", obtenerCitaPorId);

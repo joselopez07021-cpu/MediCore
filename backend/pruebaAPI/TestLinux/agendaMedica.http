@@ -1,3 +1,4 @@
+# agendaMedica.http
 @baseUrl = http://localhost:3000/api
 @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUxOTQ0MTEsImV4cCI6MTc5NTE5ODAxMSwic3ViIjoiMiJ9.vdBQg-__Hh_8oTJcbzEEgU8inRO9gK1dNmfKH4zJflQ
 

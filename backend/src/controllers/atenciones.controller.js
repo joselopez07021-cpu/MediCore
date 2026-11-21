@@ -1,3 +1,4 @@
+// atenciones.controller.js
 import { Prisma } from "@prisma/client";
 
 import {
@@ -42,10 +43,11 @@ const manejarError = (error, res) => {
 
 export const obtenerServiciosHospitalarios = async (req, res) => {
   try {
-    const data = await listarServiciosHospitalarios();
+    const data = await listarServiciosHospitalarios(req.query);
+
     return res.status(200).json({
       message: "Servicios obtenidos correctamente",
-      data
+      data,
     });
   } catch (error) {
     return manejarError(error, res);

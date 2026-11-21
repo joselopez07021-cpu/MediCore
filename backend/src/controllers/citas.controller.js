@@ -2,170 +2,181 @@
 import { Prisma } from "@prisma/client";
 
 import {
-    registrarCita,
-    listarCitas,
-    listarCitasPaginadas,
-    obtenerCita,
-    actualizarCita,
-    cambiarEstadoCita,
-    obtenerAgendaMedica,
-    listarAgendaPaginada,
-    CitaError
+  registrarCita,
+  listarCitas,
+  listarCitasPaginadas,
+  obtenerCita,
+  actualizarCita,
+  cambiarEstadoCita,
+  obtenerAgendaMedica,
+  listarAgendaPaginada,
+  obtenerResumenCitas,
+  CitaError
 } from "../services/citas.service.js";
 
 const manejarError = (error, res) => {
-    if (
-        error instanceof RangeError ||
-        error.message?.startsWith("El número de página") ||
-        error.message === "Número de página inválido"
-    ) {
-        return res.status(400).json({
-            message: error.message
-        });
-    }
-
-    if (error instanceof CitaError) {
-        return res.status(error.status).json({
-            message: error.message
-        });
-    }
-
-    if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2025"
-    ) {
-        return res.status(404).json({
-            message: "Cita no encontrada"
-        });
-    }
-
-    console.error("Error en módulo de citas:", error);
-
-    return res.status(500).json({
-        message: "Error interno del servidor"
+  if (
+    error instanceof RangeError ||
+    error.message?.startsWith("El número de página") ||
+    error.message === "Número de página inválido"
+  ) {
+    return res.status(400).json({
+      message: error.message
     });
+  }
+
+  if (error instanceof CitaError) {
+    return res.status(error.status).json({
+      message: error.message
+    });
+  }
+
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2025"
+  ) {
+    return res.status(404).json({
+      message: "Cita no encontrada"
+    });
+  }
+
+  console.error("Error en módulo de citas:", error);
+
+  return res.status(500).json({
+    message: "Error interno del servidor"
+  });
 };
 
 export const crearCita = async (req, res) => {
-    try {
-        const cita = await registrarCita(
-            req.body ?? {},
-            req.usuario.id_usuario
-        );
+  try {
+    const cita = await registrarCita(
+      req.body ?? {},
+      req.usuario.id_usuario
+    );
 
-        return res.status(201).json({
-            message: "Cita registrada correctamente",
-            data: cita
-        });
-    } catch (error) {
-        return manejarError(error, res);
-    }
+    return res.status(201).json({
+      message: "Cita registrada correctamente",
+      data: cita
+    });
+  } catch (error) {
+    return manejarError(error, res);
+  }
 };
 
 export const obtenerCitas = async (req, res) => {
-    try {
-        const citas = await listarCitas();
+  try {
+    const citas = await listarCitas();
 
-        return res.status(200).json({
-            message: "Citas obtenidas correctamente",
-            data: citas
-        });
-    } catch (error) {
-        return manejarError(error, res);
-    }
+    return res.status(200).json({
+      message: "Citas obtenidas correctamente",
+      data: citas
+    });
+  } catch (error) {
+    return manejarError(error, res);
+  }
 };
 
 export const obtenerCitaPorId = async (req, res) => {
-    try {
-        const cita = await obtenerCita(req.params.id);
+  try {
+    const cita = await obtenerCita(req.params.id);
 
-        return res.status(200).json({
-            message: "Cita obtenida correctamente",
-            data: cita
-        });
-    } catch (error) {
-        return manejarError(error, res);
-    }
+    return res.status(200).json({
+      message: "Cita obtenida correctamente",
+      data: cita
+    });
+  } catch (error) {
+    return manejarError(error, res);
+  }
 };
 
 export const editarCita = async (req, res) => {
-    try {
-        const cita = await actualizarCita(
-            req.params.id,
-            req.body ?? {}
-        );
+  try {
+    const cita = await actualizarCita(
+      req.params.id,
+      req.body ?? {}
+    );
 
-        return res.status(200).json({
-            message: "Cita actualizada correctamente",
-            data: cita
-        });
-    } catch (error) {
-        return manejarError(error, res);
-    }
+    return res.status(200).json({
+      message: "Cita actualizada correctamente",
+      data: cita
+    });
+  } catch (error) {
+    return manejarError(error, res);
+  }
 };
 
 export const actualizarEstadoCita = async (req, res) => {
-    try {
-        const cita = await cambiarEstadoCita(
-            req.params.id,
-            req.body?.estado
-        );
+  try {
+    const cita = await cambiarEstadoCita(
+      req.params.id,
+      req.body?.estado
+    );
 
-        return res.status(200).json({
-            message: "Estado de la cita actualizado correctamente",
-            data: cita
-        });
-    } catch (error) {
-        return manejarError(error, res);
-    }
+    return res.status(200).json({
+      message: "Estado de la cita actualizado correctamente",
+      data: cita
+    });
+  } catch (error) {
+    return manejarError(error, res);
+  }
 };
 
 
 export const obtenerCitasPaginadas = async (req, res) => {
-    try {
-        const resultado = await listarCitasPaginadas(
-            req.query
-        );
+  try {
+    const resultado = await listarCitasPaginadas(
+      req.query
+    );
 
-        return res.status(200).json({
-            message: "Citas obtenidas correctamente",
-            ...resultado
-        });
-    } catch (error) {
-        return manejarError(error, res);
-    }
+    return res.status(200).json({
+      message: "Citas obtenidas correctamente",
+      ...resultado
+    });
+  } catch (error) {
+    return manejarError(error, res);
+  }
 };
 
 export const obtenerAgendaPaginada = async (req, res) => {
-    try {
-        const resultado = await listarAgendaPaginada(
-            req.query
-        );
+  try {
+    const resultado = await listarAgendaPaginada(
+      req.query
+    );
 
-        return res.status(200).json({
-            message: "Agenda médica obtenida correctamente",
-            ...resultado
-        });
-    } catch (error) {
-        return manejarError(error, res);
-    }
+    return res.status(200).json({
+      message: "Agenda médica obtenida correctamente",
+      ...resultado
+    });
+  } catch (error) {
+    return manejarError(error, res);
+  }
 };
 
 export const consultarAgendaMedica = async (req, res) => {
-    try {
-        const { fecha, id_medico } = req.query;
+  try {
+    const { fecha, id_medico } = req.query;
 
-        const citas = await obtenerAgendaMedica(
-            fecha,
-            id_medico
-        );
+    const citas = await obtenerAgendaMedica(
+      fecha,
+      id_medico
+    );
 
-        return res.status(200).json({
-            message: "Agenda médica obtenida correctamente",
-            data: citas
-        });
+    return res.status(200).json({
+      message: "Agenda médica obtenida correctamente",
+      data: citas
+    });
 
-    } catch (error) {
-        return manejarError(error, res);
-    }
+  } catch (error) {
+    return manejarError(error, res);
+  }
 };
+
+// GET /api/citas/resumen
+export async function resumenCitas(req, res) {
+  const data = await obtenerResumenCitas(req.query);
+
+  return res.status(200).json({
+    message: "Resumen de citas obtenido correctamente",
+    data,
+  });
+}
