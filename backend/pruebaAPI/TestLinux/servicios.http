@@ -1,0 +1,24 @@
+@baseUrl = http://localhost:3000/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUyMTcyOTYsImV4cCI6MTc5NTIyMDg5Niwic3ViIjoiMSJ9.1FMx85ZJFZTqDxbmDef3OXQEJH68LuWnMBh6gaFMUT0
+
+### Login administrador
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "nombre_usuario": "admin.demo",
+  "password": "Admin123!"
+}
+
+
+### Catálogo completo
+GET {{baseUrl}}/atenciones/servicios
+Authorization: Bearer {{token}}
+
+### Filtrar cardiología
+GET {{baseUrl}}/atenciones/servicios?buscar=cardio
+Authorization: Bearer {{token}}
+
+### Filtrar consultas
+GET {{baseUrl}}/atenciones/servicios?buscar=consulta
+Authorization: Bearer {{token}}

@@ -1,4 +1,3 @@
-# auth.http
 @baseUrl = http://localhost:3000/api
 @token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUyMTcyOTYsImV4cCI6MTc5NTIyMDg5Niwic3ViIjoiMSJ9.1FMx85ZJFZTqDxbmDef3OXQEJH68LuWnMBh6gaFMUT0
 
@@ -71,14 +70,3 @@ Authorization: Bearer {{token}}
 GET {{baseUrl}}/citas/resumen
 Authorization: Bearer {{token}}
 
-### Catálogo completo
-GET {{baseUrl}}/atenciones/servicios
-Authorization: Bearer {{token}}
-
-### Filtrar cardiología
-GET {{baseUrl}}/atenciones/servicios?buscar=cardio
-Authorization: Bearer {{token}}
-
-### Filtrar consultas
-GET {{baseUrl}}/atenciones/servicios?buscar=consulta
-Authorization: Bearer {{token}}
