@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Auth, DEMO_ACCOUNTS, DEMO_PASSWORD } from '../../nucleo/autenticacion';
 import { Role } from '../../nucleo/modelos';
 import { DemoStore } from '../../nucleo/almacen-demostracion';
+import { AutenticacionApi } from '../../servicios/servicio-autenticacion-api';
 @Component({
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink],
@@ -95,6 +96,11 @@ import { DemoStore } from '../../nucleo/almacen-demostracion';
           @if (error()) {
             <p class="error" role="alert">{{ error() }}</p>
           }
+            @if (mensaje()) {
+            <p class="text-sm text-teal-700" role="status">
+            {{ mensaje() }}
+           </p>
+        }
           <div class="rounded-xl border border-teal-100 bg-teal-50 p-4 text-sm text-teal-900">
             <p class="font-semibold">Credenciales de muestra</p>
             <p class="mt-1">
@@ -102,9 +108,13 @@ import { DemoStore } from '../../nucleo/almacen-demostracion';
               <strong>{{ demoPassword }}</strong>
             </p>
           </div>
-          <button class="btn-primary w-full justify-center py-3" type="submit">
-            Iniciar sesión →
-          </button>
+          <button
+  class="btn-primary w-full justify-center py-3"
+  type="submit"
+  [disabled]="enviando()"
+>
+  {{ enviando() ? 'Verificando…' : 'Verificar credenciales' }}
+</button>
           @if (auth.role()) {
             <a routerLink="/inicio" class="btn-secondary w-full">Cancelar y volver al inicio</a>
           }
@@ -123,6 +133,9 @@ export class Login {
   router = inject(Router);
   route = inject(ActivatedRoute);
   error = signal('');
+  private autenticacionApi = inject(AutenticacionApi);
+  enviando = signal(false);
+  mensaje = signal('');
   demoPassword = DEMO_PASSWORD;
   form = inject(FormBuilder).nonNullable.group({
     role: ['ADMINISTRADOR', Validators.required],
@@ -152,30 +165,37 @@ export class Login {
       .medicos.find((m) => m.id === Number(this.form.controls.medicoId.value));
   }
   enter() {
+    if (this.enviando()) return;
+
     this.error.set('');
+    this.mensaje.set('');
     this.form.markAllAsTouched();
+
     if (this.form.invalid) return;
-    const role = this.form.controls.role.value as Role;
-    if (role === 'MEDICO' && !this.selectedDoctor()) return;
-    if (
-      !this.auth.verifyCredentials(
-        role,
-        this.form.controls.username.value,
-        this.form.controls.password.value,
-      )
-    ) {
-      this.error.set(
-        'Usuario o contraseña incorrectos. Utiliza las credenciales de muestra indicadas.',
-      );
-      return;
-    }
-    this.auth.login(role, this.selectedDoctor()?.id);
-    const destination = this.destination;
-    if (
-      destination &&
-      (!destination.route.data?.['roles'] || this.auth.can(destination.route.data['roles']))
-    ) {
-      void this.router.navigateByUrl(destination.url);
-    } else void this.router.navigateByUrl('/inicio');
+
+    this.enviando.set(true);
+
+    this.autenticacionApi.iniciarSesion(
+      this.form.controls.username.value.trim(),
+      this.form.controls.password.value,
+    ).subscribe({
+      next: (respuesta) => {
+        this.enviando.set(false);
+        this.mensaje.set(
+          `Credenciales verificadas: ${respuesta.data.usuario.nombre_completo}`,
+        );
+      },
+      error: (fallo) => {
+        this.enviando.set(false);
+
+        if (fallo.status === 401) {
+          this.error.set('Credenciales inválidas o cuenta deshabilitada.');
+        } else if (fallo.status === 0) {
+          this.error.set('No se pudo contactar con el backend.');
+        } else {
+          this.error.set('No se pudo completar la verificación.');
+        }
+      },
+    });
   }
 }
