@@ -10,7 +10,7 @@ import {
   obtenerAgendaPaginada,
   actualizarEstadoCita,
   consultarAgendaMedica,
-  resumenCitas
+  resumenCitas,
 } from "../controllers/citas.controller.js";
 
 import { autenticar } from "../middlewares/auth.middleware.js";
@@ -22,7 +22,7 @@ router.use(autenticar);
 router.use(autorizar("ADMINISTRADOR", "ADMISION", "MEDICO"));
 
 // CREATE
-router.post("/", crearCita);
+router.post("/", autorizar("ADMINISTRADOR", "ADMISION"), crearCita);
 
 // READ - Citas
 router.get("/", obtenerCitas);
@@ -37,9 +37,13 @@ router.get("/resumen", resumenCitas);
 router.get("/:id", obtenerCitaPorId);
 
 // UPDATE
-router.put("/:id", editarCita);
+router.put("/:id", autorizar("ADMINISTRADOR", "ADMISION"), editarCita);
 
 // Cambiar estado
-router.patch("/:id/estado", actualizarEstadoCita);
+router.patch(
+  "/:id/estado",
+  autorizar("ADMINISTRADOR", "ADMISION"),
+  actualizarEstadoCita,
+);
 
 export default router;

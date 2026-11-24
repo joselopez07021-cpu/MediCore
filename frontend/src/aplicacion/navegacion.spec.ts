@@ -17,12 +17,15 @@ import { Api } from './servicios/servicio-api';
 import { AtencionesApi } from './servicios/servicio-atenciones-api';
 import { of } from 'rxjs';
 import { provideHttpClient } from '@angular/common/http';
-import {
-  HttpTestingController,
-  provideHttpClientTesting,
-} from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { PacientesApi } from './servicios/servicio-pacientes-api';
+import {
+  MedicosApi,
+  CitasApi,
+  InventarioApi,
+  ConsultasApi,
+} from './servicios/servicio-operaciones-api';
 
 describe('Páginas y permisos de MediCore', () => {
   function respuestaLogin(rol: Role, idMedico: string | null = null): RespuestaLogin {
@@ -55,12 +58,67 @@ describe('Páginas y permisos de MediCore', () => {
         provideRouter(routes),
         provideHttpClient(),
         provideHttpClientTesting(),
+        { provide: MedicosApi, useValue: { listar: () => of({ data: [] }) } },
+        { provide: CitasApi, useValue: { listar: () => of({ data: [] }) } },
+        {
+          provide: InventarioApi,
+          useValue: {
+            insumos: () => of({ data: [] }),
+            categorias: () => of({ data: [] }),
+            movimientos: () => of({ data: [] }),
+          },
+        },
+        {
+          provide: ConsultasApi,
+          useValue: {
+            inicio: () =>
+              of({
+                data: {
+                  indicadores: {
+                    pacientes_registrados: 0,
+                    citas_hoy: 0,
+                    atenciones_registradas: 0,
+                    insumos_por_reponer: 0,
+                  },
+                  estados_citas: {},
+                  agenda_hoy: [],
+                  reposicion: [],
+                },
+              }),
+            servicios: () => of({ data: [] }),
+            usuarios: () => of({ data: [] }),
+            reporte: () =>
+              of({
+                data: {
+                  total_citas: 0,
+                  citas_atendidas: 0,
+                  total_atenciones: 0,
+                  total_servicios: 0,
+                  total_movimientos: 0,
+                  insumos_por_reponer: 0,
+                  citas_por_medico: [],
+                  servicios: [],
+                  consumos: [],
+                },
+              }),
+          },
+        },
         {
           provide: AtencionesApi,
           useValue: {
             catalogos: () => of({ data: { servicios: [], insumos: [] } }),
             pendientes: () => of({ data: [] }),
-            historial: () => of({ data: [], paginacion: { pagina_actual: 1, total_elementos: 0, total_paginas: 0, tiene_anterior: false, tiene_siguiente: false } }),
+            historial: () =>
+              of({
+                data: [],
+                paginacion: {
+                  pagina_actual: 1,
+                  total_elementos: 0,
+                  total_paginas: 0,
+                  tiene_anterior: false,
+                  tiene_siguiente: false,
+                },
+              }),
             resumen: () => of({ data: { total_atenciones: 0, citas_pendientes: 0 } }),
             cita: () => of({ data: { id_cita: '1', puede_registrar: false } }),
           },
@@ -68,25 +126,26 @@ describe('Páginas y permisos de MediCore', () => {
         {
           provide: PacientesApi,
           useValue: {
-            listar: () => of({
-              message: 'Pacientes de prueba',
-              data: [],
-            }),
+            listar: () =>
+              of({
+                message: 'Pacientes de prueba',
+                data: [],
+              }),
           },
         },
         {
           provide: Api,
           useValue: {
-            verificarConexion: () => of({
-              status: 200,
-              message: 'Conexión simulada para pruebas',
-              data: { database: 'connected' },
-            }),
+            verificarConexion: () =>
+              of({
+                status: 200,
+                message: 'Conexión simulada para pruebas',
+                data: { database: 'connected' },
+              }),
           },
         },
       ],
     });
-
   });
   it('renderiza todas las páginas principales con el perfil administrador', async () => {
     prepararSesion('ADMINISTRADOR');
@@ -122,8 +181,7 @@ describe('Páginas y permisos de MediCore', () => {
     await harness.navigateByUrl('/inventario/insumos');
     expect(TestBed.inject(Router).url).toBe('/inicio');
     await harness.navigateByUrl('/admision/pacientes');
-    expect(harness.routeNativeElement?.querySelector('h1')?.textContent)
-      .toContain('Pacientes');
+    expect(harness.routeNativeElement?.querySelector('h1')?.textContent).toContain('Pacientes');
   });
   it('carga pacientes desde HTTP y permite buscar por apellido', async () => {
     TestBed.overrideProvider(PacientesApi, {
@@ -139,43 +197,39 @@ describe('Páginas y permisos de MediCore', () => {
 
     await harness.navigateByUrl('/admision/pacientes');
 
-    const page = harness.routeDebugElement!
-      .query(By.directive(Patients))
+    const page = harness.routeDebugElement!.query(By.directive(Patients))
       .componentInstance as Patients;
 
     expect(page.cargando()).toBe(true);
 
-    const solicitud = http.expectOne(
-      'http://localhost:3000/api/pacientes',
-    );
+    const solicitud = http.expectOne('http://localhost:3000/api/pacientes');
 
     expect(solicitud.request.method).toBe('GET');
 
     solicitud.flush({
       message: 'Pacientes obtenidos correctamente',
-      data: [{
-        id_paciente: '9007199254740993',
-        identificacion: 'TEST-001',
-        nombre: 'María',
-        apellido: 'Soto',
-        fecha_nacimiento: null,
-        telefono: null,
-        correo: null,
-        direccion: null,
-        fecha_registro: '2026-11-24T12:00:00.000Z',
-        activo: true,
-      }],
+      data: [
+        {
+          id_paciente: '9007199254740993',
+          identificacion: 'TEST-001',
+          nombre: 'María',
+          apellido: 'Soto',
+          fecha_nacimiento: null,
+          telefono: null,
+          correo: null,
+          direccion: null,
+          fecha_registro: '2026-11-24T12:00:00.000Z',
+          activo: true,
+        },
+      ],
     });
 
     harness.detectChanges();
 
     expect(page.cargando()).toBe(false);
-    expect(page.pacientes()[0].id_paciente)
-      .toBe('9007199254740993');
-    expect(harness.routeNativeElement?.textContent)
-      .toContain('María Soto');
-    expect(harness.routeNativeElement?.textContent)
-      .toContain('Sin teléfono');
+    expect(page.pacientes()[0].id_paciente).toBe('9007199254740993');
+    expect(harness.routeNativeElement?.textContent).toContain('María Soto');
+    expect(harness.routeNativeElement?.textContent).toContain('Sin teléfono');
 
     page.query.set('SOTO');
     expect(page.rows().length).toBe(1);
@@ -209,13 +263,15 @@ describe('Páginas y permisos de MediCore', () => {
       http.expectOne('http://localhost:3000/api/auth/login').flush(respuesta);
       await harness.fixture.whenStable();
       expect(auth.idMedicoReal()).toBe(idMedico);
-      expect(auth.medicoId()).toBeNull();
+      expect(auth.usuario()?.id_medico).toBe(idMedico);
       expect(harness.routeNativeElement?.textContent).toContain('Profesional de PostgreSQL');
-      const inicio = harness.routeDebugElement!.query(By.directive(Dashboard)).componentInstance as Dashboard;
+      const inicio = harness.routeDebugElement!.query(By.directive(Dashboard))
+        .componentInstance as Dashboard;
       expect(inicio.day()).toEqual([]);
 
       await harness.navigateByUrl('/admision/agenda');
-      const agenda = harness.routeDebugElement!.query(By.directive(Agenda)).componentInstance as Agenda;
+      const agenda = harness.routeDebugElement!.query(By.directive(Agenda))
+        .componentInstance as Agenda;
       expect(agenda.rows()).toEqual([]);
       const solicitud = http.expectOne((req) => req.url.endsWith('/citas/agenda'));
       expect(solicitud.request.method).toBe('GET');
@@ -223,11 +279,19 @@ describe('Páginas y permisos de MediCore', () => {
       expect(solicitud.request.params.has('id_medico')).toBe(false);
       expect(solicitud.request.headers.get('Authorization')).toBe('Bearer token-solo-para-pruebas');
       const cita = {
-        id_cita: 'cita-real', id_paciente: 'paciente-real', id_medico: idMedico,
-        paciente: 'Paciente de PostgreSQL', medico: 'Profesional de PostgreSQL',
-        fecha_hora_inicio: '2026-11-24T14:30:00.000Z', motivo: 'Consulta real', estado: 'CONFIRMADA',
+        id_cita: 'cita-real',
+        id_paciente: 'paciente-real',
+        id_medico: idMedico,
+        paciente: 'Paciente de PostgreSQL',
+        medico: 'Profesional de PostgreSQL',
+        fecha_hora_inicio: '2026-11-24T14:30:00.000Z',
+        motivo: 'Consulta real',
+        estado: 'CONFIRMADA',
       };
-      solicitud.flush({ message: 'Agenda', data: [cita, { ...cita, id_cita: 'otra-cita', id_medico: 'otro-medico' }] });
+      solicitud.flush({
+        message: 'Agenda',
+        data: [cita, { ...cita, id_cita: 'otra-cita', id_medico: 'otro-medico' }],
+      });
       harness.detectChanges();
       expect(agenda.citasReales().map((item) => item.id_cita)).toEqual(['cita-real']);
       expect(harness.routeNativeElement?.textContent).toContain('Paciente de PostgreSQL');
@@ -237,28 +301,39 @@ describe('Páginas y permisos de MediCore', () => {
       agenda.date.set('2026-11-25');
       harness.detectChanges();
       expect(agenda.citasReales()).toEqual([]);
-      http.expectOne((req) => req.url.endsWith('/citas/agenda') && req.params.get('fecha') === '2026-11-25')
+      http
+        .expectOne(
+          (req) => req.url.endsWith('/citas/agenda') && req.params.get('fecha') === '2026-11-25',
+        )
         .flush({ message: 'Agenda', data: [] });
       harness.detectChanges();
       expect(harness.routeNativeElement?.textContent).toContain('No hay citas registradas');
 
       agenda.date.set('2026-11-26');
       harness.detectChanges();
-      http.expectOne((req) => req.url.endsWith('/citas/agenda'))
+      http
+        .expectOne((req) => req.url.endsWith('/citas/agenda'))
         .flush({ message: 'Error' }, { status: 503, statusText: 'Unavailable' });
       harness.detectChanges();
-      expect(harness.routeNativeElement?.querySelector('[role="alert"]')?.textContent).toContain('No se pudo cargar');
+      expect(harness.routeNativeElement?.querySelector('[role="alert"]')?.textContent).toContain(
+        'No se pudo cargar',
+      );
       expect(agenda.citasReales()).toEqual([]);
 
       await harness.navigateByUrl('/servicios/atenciones?cita=1');
-      const atenciones = harness.routeDebugElement!.query(By.directive(Cares)).componentInstance as Cares;
+      const atenciones = harness.routeDebugElement!.query(By.directive(Cares))
+        .componentInstance as Cares;
       expect(atenciones.eligible()).toEqual([]);
       expect(atenciones.rows()).toEqual([]);
       expect(atenciones.editing()).toBe(false);
       atenciones.open('1');
       expect(atenciones.editing()).toBe(false);
       const antes = JSON.stringify(TestBed.inject(DemoStore).data());
-      atenciones.form.patchValue({ citaId: '1', diagnostico: 'No guardar en demo', servicios: ['1'] });
+      atenciones.form.patchValue({
+        citaId: '1',
+        diagnostico: 'No guardar en demo',
+        servicios: ['1'],
+      });
       atenciones.save();
       expect(JSON.stringify(TestBed.inject(DemoStore).data())).toBe(antes);
       expect(atenciones.error()).toContain('autorizada');
@@ -270,10 +345,12 @@ describe('Páginas y permisos de MediCore', () => {
   it('no consulta ni muestra agenda demo si la sesión médica carece de ID real', async () => {
     TestBed.inject(Auth).guardarSesion(respuestaLogin('MEDICO').data);
     const harness = await RouterTestingHarness.create('/admision/agenda');
-    expect(harness.routeNativeElement?.querySelector('[role="alert"]')?.textContent)
-      .toContain('perfil médico válido');
+    expect(harness.routeNativeElement?.querySelector('[role="alert"]')?.textContent).toContain(
+      'perfil médico válido',
+    );
     TestBed.inject(HttpTestingController).expectNone((req) => req.url.endsWith('/citas/agenda'));
-    const agenda = harness.routeDebugElement!.query(By.directive(Agenda)).componentInstance as Agenda;
+    const agenda = harness.routeDebugElement!.query(By.directive(Agenda))
+      .componentInstance as Agenda;
     expect(agenda.rows()).toEqual([]);
   });
   it('rechaza el login cuando el servidor devuelve 401', async () => {
@@ -288,9 +365,7 @@ describe('Páginas y permisos de MediCore', () => {
 
     login.enter();
 
-    const solicitud = http.expectOne(
-      'http://localhost:3000/api/auth/login',
-    );
+    const solicitud = http.expectOne('http://localhost:3000/api/auth/login');
 
     expect(solicitud.request.method).toBe('POST');
     expect(solicitud.request.body).toEqual({
@@ -308,9 +383,9 @@ describe('Páginas y permisos de MediCore', () => {
     expect(TestBed.inject(Auth).usuario()).toBeNull();
     expect(TestBed.inject(Auth).token()).toBeNull();
     expect(TestBed.inject(Router).url).toBe('/login');
-    expect(
-      harness.routeNativeElement?.querySelector('[role="alert"]')?.textContent,
-    ).toContain('Credenciales inválidas');
+    expect(harness.routeNativeElement?.querySelector('[role="alert"]')?.textContent).toContain(
+      'Credenciales inválidas',
+    );
 
     http.verify();
   });

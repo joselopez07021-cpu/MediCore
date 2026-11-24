@@ -1,34 +1,53 @@
 <mc-page-header
   title="Citas médicas"
-  subtitle="Coordina los horarios y da seguimiento a cada cita."
+  subtitle="Coordina citas de 30 minutos en horario de Costa Rica."
   section="ADMISIÓN / CITAS"
-  ><button class="btn-primary" (click)="open(null)">＋ Programar cita</button></mc-page-header
 >
+  <button class="btn-secondary" [disabled]="cargando() || guardando()" (click)="cargar()">
+    Actualizar
+  </button>
+  <button class="btn-primary" [disabled]="cargando() || guardando()" (click)="open(null)">
+    ＋ Programar cita
+  </button>
+</mc-page-header>
+@if (error() && editing() === undefined) {
+  <p class="error mb-4" role="alert">{{ error() }}</p>
+}
+@if (aviso()) {
+  <p class="mb-4 text-sm text-teal-700" role="status">{{ aviso() }}</p>
+}
 <div class="mb-6 grid gap-4 sm:grid-cols-3">
   @for (s of ['PROGRAMADA', 'CONFIRMADA', 'ATENDIDA']; track s) {
     <div class="card flex items-center justify-between p-5">
-      <mc-status [value]="s" /><strong class="text-2xl text-slate-800">{{ count(s) }}</strong>
+      <mc-status [value]="s" /><strong class="text-2xl">{{ count(s) }}</strong>
     </div>
   }
 </div>
 <section class="card">
   <div class="toolbar">
     <input
-      placeholder="Buscar paciente, médico o motivo…"
       aria-label="Buscar citas"
-      (input)="query.set($any($event.target).value)"
-    /><select aria-label="Filtrar por estado" (change)="status.set($any($event.target).value)">
+      placeholder="Paciente, médico o motivo…"
+      (input)="query.set($any($event.target).value); pagina.set(1)"
+    />
+    <select
+      aria-label="Filtrar por estado"
+      (change)="status.set($any($event.target).value); pagina.set(1)"
+    >
       <option value="">Todos los estados</option>
       @for (s of ['PROGRAMADA', 'CONFIRMADA', 'ATENDIDA', 'CANCELADA', 'NO_ASISTIO']; track s) {
         <option>{{ s }}</option>
-      }</select
-    ><input
+      }
+    </select>
+    <input
       type="date"
-      class="!w-auto"
       aria-label="Filtrar por fecha"
-      (input)="date.set($any($event.target).value)"
-    /><span class="ml-auto text-xs text-slate-400">{{ rows().length }} citas</span>
+      (input)="date.set($any($event.target).value); pagina.set(1)"
+    />
   </div>
+  @if (cargando()) {
+    <p class="p-5" role="status">Cargando citas…</p>
+  }
   <div class="table-wrap">
     <table class="data-table">
       <thead>
@@ -41,45 +60,49 @@
         </tr>
       </thead>
       <tbody>
-        @for (a of rows(); track a.id) {
+        @for (a of visibles(); track a.id_cita) {
           <tr>
             <td>
-              <p class="font-semibold text-slate-800">{{ store.patient(a.pacienteId) }}</p>
-              <p class="mt-1 text-xs text-slate-400">{{ a.motivo }}</p>
+              <p class="font-semibold">{{ a.paciente }}</p>
+              <p class="mt-1 text-xs text-slate-500">{{ a.motivo }}</p>
             </td>
-            <td class="text-xs">{{ store.doctor(a.medicoId) }}</td>
-            <td>
-              {{ a.fecha | date: 'dd/MM/yyyy' }}
-              <p class="mt-1 text-xs text-sky-700">{{ a.hora }}</p>
-            </td>
+            <td>{{ a.medico }}</td>
+            <td>{{ a.fecha_hora_inicio | date: 'dd/MM/yyyy HH:mm' : '-0600' }}</td>
             <td><mc-status [value]="a.estado" /></td>
             <td>
-              <div class="flex gap-3">
+              <div class="flex flex-wrap gap-3">
                 @if (a.estado !== 'ATENDIDA') {
-                  <button class="link" (click)="open(a)">Editar</button>
+                  <button class="link" [disabled]="guardando()" (click)="open(a)">Editar</button>
                 }
                 @if (a.estado === 'PROGRAMADA') {
-                  <button class="link" (click)="change(a, 'CONFIRMADA')">Confirmar</button>
+                  <button class="link" [disabled]="guardando()" (click)="change(a, 'CONFIRMADA')">
+                    Confirmar
+                  </button>
                 }
                 @if (a.estado === 'PROGRAMADA' || a.estado === 'CONFIRMADA') {
-                  <button class="text-xs font-medium text-rose-600" (click)="canceling.set(a)">
+                  <button
+                    class="link text-rose-600"
+                    [disabled]="guardando()"
+                    (click)="canceling.set(a)"
+                  >
                     Cancelar
                   </button>
                 }
                 @if (a.estado === 'ATENDIDA') {
-                  <span class="text-xs text-slate-400">Atención registrada</span>
+                  <span class="text-xs text-slate-500">Atención registrada</span>
                 }
               </div>
             </td>
           </tr>
         } @empty {
           <tr>
-            <td class="empty" colspan="5">No hay citas que coincidan con los filtros.</td>
+            <td colspan="5" class="empty">No hay citas que coincidan con los filtros.</td>
           </tr>
         }
       </tbody>
     </table>
   </div>
+  <mc-paginador [total]="rows().length" [pagina]="paginaActual()" (cambio)="pagina.set($event)" />
 </section>
 @if (editing() !== undefined) {
   <mc-editor
@@ -87,30 +110,24 @@
     [fields]="fields()"
     [values]="values()"
     [error]="error()"
+    [busy]="guardando()"
     (save)="save($event)"
     (cancel)="editing.set(undefined)"
   />
 }
 @if (canceling(); as a) {
   <div class="modal-backdrop">
-    <section
-      mcDialog
-      class="modal !max-w-md"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="cancel-title"
-      (keydown.escape)="canceling.set(null)"
-    >
-      <h2 id="cancel-title">Cancelar cita</h2>
-      <p class="my-5 text-sm leading-relaxed text-slate-500">
-        Se cancelará la cita de {{ store.patient(a.pacienteId) }} del
-        {{ a.fecha | date: 'dd/MM/yyyy' }} a las {{ a.hora }}. El registro se conservará en el
-        historial.
-      </p>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="cancelar-cita">
+      <h2 id="cancelar-cita">Cancelar cita</h2>
+      <p class="my-5">¿Cancelar la cita de {{ a.paciente }}?</p>
+      @if (error()) {
+        <p class="error" role="alert">{{ error() }}</p>
+      }
       <div class="flex justify-end gap-3">
-        <button class="btn-secondary" (click)="canceling.set(null)">Volver</button
-        ><button class="btn-primary !bg-rose-600" (click)="change(a, 'CANCELADA')">
-          Cancelar cita
+        <button class="btn-secondary" [disabled]="guardando()" (click)="canceling.set(null)">
+          Volver</button
+        ><button class="btn-primary" [disabled]="guardando()" (click)="change(a, 'CANCELADA')">
+          Confirmar cancelación
         </button>
       </div>
     </section>

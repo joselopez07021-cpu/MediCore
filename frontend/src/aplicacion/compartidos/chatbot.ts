@@ -57,7 +57,7 @@ export class Chatbot {
     // No compartir conversaciones entre perfiles ni conservarlas después de salir.
     effect(() => {
       this.auth.role();
-      this.auth.medicoId();
+      this.auth.usuario();
       untracked(() => this.reset());
     });
   }

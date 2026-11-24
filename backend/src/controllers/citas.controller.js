@@ -11,7 +11,7 @@ import {
   obtenerAgendaMedica,
   listarAgendaPaginada,
   obtenerResumenCitas,
-  CitaError
+  CitaError,
 } from "../services/citas.service.js";
 
 const manejarError = (error, res) => {
@@ -21,13 +21,13 @@ const manejarError = (error, res) => {
     error.message === "Número de página inválido"
   ) {
     return res.status(400).json({
-      message: error.message
+      message: error.message,
     });
   }
 
   if (error instanceof CitaError) {
     return res.status(error.status).json({
-      message: error.message
+      message: error.message,
     });
   }
 
@@ -36,27 +36,24 @@ const manejarError = (error, res) => {
     error.code === "P2025"
   ) {
     return res.status(404).json({
-      message: "Cita no encontrada"
+      message: "Cita no encontrada",
     });
   }
 
   console.error("Error en módulo de citas:", error);
 
   return res.status(500).json({
-    message: "Error interno del servidor"
+    message: "Error interno del servidor",
   });
 };
 
 export const crearCita = async (req, res) => {
   try {
-    const cita = await registrarCita(
-      req.body ?? {},
-      req.usuario.id_usuario
-    );
+    const cita = await registrarCita(req.body ?? {}, req.usuario.id_usuario);
 
     return res.status(201).json({
       message: "Cita registrada correctamente",
-      data: cita
+      data: cita,
     });
   } catch (error) {
     return manejarError(error, res);
@@ -65,11 +62,15 @@ export const crearCita = async (req, res) => {
 
 export const obtenerCitas = async (req, res) => {
   try {
-    const citas = await listarCitas();
+    const citas = await listarCitas(
+      req.usuario.roles.nombre === "MEDICO"
+        ? req.usuario.medicos.id_medico
+        : undefined,
+    );
 
     return res.status(200).json({
       message: "Citas obtenidas correctamente",
-      data: citas
+      data: citas,
     });
   } catch (error) {
     return manejarError(error, res);
@@ -79,10 +80,18 @@ export const obtenerCitas = async (req, res) => {
 export const obtenerCitaPorId = async (req, res) => {
   try {
     const cita = await obtenerCita(req.params.id);
+    if (
+      req.usuario.roles.nombre === "MEDICO" &&
+      cita.id_medico !== String(req.usuario.medicos.id_medico)
+    ) {
+      return res
+        .status(403)
+        .json({ message: "Solo puedes consultar tus propias citas" });
+    }
 
     return res.status(200).json({
       message: "Cita obtenida correctamente",
-      data: cita
+      data: cita,
     });
   } catch (error) {
     return manejarError(error, res);
@@ -91,14 +100,11 @@ export const obtenerCitaPorId = async (req, res) => {
 
 export const editarCita = async (req, res) => {
   try {
-    const cita = await actualizarCita(
-      req.params.id,
-      req.body ?? {}
-    );
+    const cita = await actualizarCita(req.params.id, req.body ?? {});
 
     return res.status(200).json({
       message: "Cita actualizada correctamente",
-      data: cita
+      data: cita,
     });
   } catch (error) {
     return manejarError(error, res);
@@ -107,30 +113,28 @@ export const editarCita = async (req, res) => {
 
 export const actualizarEstadoCita = async (req, res) => {
   try {
-    const cita = await cambiarEstadoCita(
-      req.params.id,
-      req.body?.estado
-    );
+    const cita = await cambiarEstadoCita(req.params.id, req.body?.estado);
 
     return res.status(200).json({
       message: "Estado de la cita actualizado correctamente",
-      data: cita
+      data: cita,
     });
   } catch (error) {
     return manejarError(error, res);
   }
 };
 
-
 export const obtenerCitasPaginadas = async (req, res) => {
   try {
     const resultado = await listarCitasPaginadas(
-      req.query
+      req.usuario.roles.nombre === "MEDICO"
+        ? { ...req.query, id_medico: String(req.usuario.medicos.id_medico) }
+        : req.query,
     );
 
     return res.status(200).json({
       message: "Citas obtenidas correctamente",
-      ...resultado
+      ...resultado,
     });
   } catch (error) {
     return manejarError(error, res);
@@ -140,12 +144,14 @@ export const obtenerCitasPaginadas = async (req, res) => {
 export const obtenerAgendaPaginada = async (req, res) => {
   try {
     const resultado = await listarAgendaPaginada(
-      req.query
+      req.usuario.roles.nombre === "MEDICO"
+        ? { ...req.query, id_medico: String(req.usuario.medicos.id_medico) }
+        : req.query,
     );
 
     return res.status(200).json({
       message: "Agenda médica obtenida correctamente",
-      ...resultado
+      ...resultado,
     });
   } catch (error) {
     return manejarError(error, res);
@@ -160,21 +166,19 @@ export const consultarAgendaMedica = async (req, res) => {
     if (req.usuario.roles.nombre === "MEDICO") {
       const idPropio = req.usuario.medicos?.id_medico?.toString();
       if (!idPropio || (id_medico !== undefined && id_medico !== idPropio)) {
-        return res.status(403).json({ message: "Solo puedes consultar tu propia agenda" });
+        return res
+          .status(403)
+          .json({ message: "Solo puedes consultar tu propia agenda" });
       }
       idMedicoAutorizado = idPropio;
     }
 
-    const citas = await obtenerAgendaMedica(
-      fecha,
-      idMedicoAutorizado
-    );
+    const citas = await obtenerAgendaMedica(fecha, idMedicoAutorizado);
 
     return res.status(200).json({
       message: "Agenda médica obtenida correctamente",
-      data: citas
+      data: citas,
     });
-
   } catch (error) {
     return manejarError(error, res);
   }
@@ -182,7 +186,11 @@ export const consultarAgendaMedica = async (req, res) => {
 
 // GET /api/citas/resumen
 export async function resumenCitas(req, res) {
-  const data = await obtenerResumenCitas(req.query);
+  const data = await obtenerResumenCitas(
+    req.usuario.roles.nombre === "MEDICO"
+      ? { ...req.query, id_medico: String(req.usuario.medicos.id_medico) }
+      : req.query,
+  );
 
   return res.status(200).json({
     message: "Resumen de citas obtenido correctamente",

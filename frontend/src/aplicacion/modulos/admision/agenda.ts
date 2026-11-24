@@ -1,16 +1,17 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { DemoStore } from '../../nucleo/almacen-demostracion';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Auth } from '../../nucleo/autenticacion';
-import { today } from '../../nucleo/datos-demostracion';
+import { fechaCostaRica } from '../../nucleo/utilidades-api';
 import { PageHeader } from '../../compartidos/encabezado-pagina';
 import { StatusBadge } from '../../compartidos/indicador-estado';
 import { AgendaApi, CitaAgenda } from '../../servicios/servicio-agenda-api';
+import { MedicosApi, MedicoDto } from '../../servicios/servicio-operaciones-api';
 @Component({
   standalone: true,
   imports: [PageHeader, StatusBadge, DatePipe, RouterLink],
-  template: `<mc-page-header
+  template: ` <mc-page-header
       title="Agenda médica"
       subtitle="Consulta la jornada y accede al registro de atención."
       section="ADMISIÓN / AGENDA"
@@ -23,98 +24,101 @@ import { AgendaApi, CitaAgenda } from '../../servicios/servicio-agenda-api';
             [value]="date()"
             (input)="date.set($any($event.target).value)"
         /></label>
-        @if (auth.role() !== 'MEDICO') {
+        @if (auth.usuario()?.rol !== 'MEDICO') {
           <label class="field"
-            >Médico<select (change)="doctor.set(+$any($event.target).value)">
-              <option value="0">Todos los médicos</option>
-              @for (d of store.data().medicos; track d.id) {
-                <option [value]="d.id">{{ d.nombre }}</option>
+            >Médico<select [value]="doctor()" (change)="doctor.set($any($event.target).value)">
+              <option value="">Todos los médicos</option>
+              @for (m of medicos(); track m.id_medico) {
+                <option [value]="m.id_medico">{{ m.nombre_completo }}</option>
               }
             </select></label
           >
         }
-        <p class="ml-auto text-xs text-slate-400">
-          {{ auth.usuario()?.rol === 'MEDICO' ? citasReales().length : rows().length }} citas
-          · {{ date() | date: 'dd/MM/yyyy' }}
-        </p>
+        <span class="ml-auto text-sm text-slate-500">{{ rows().length }} citas</span>
       </div>
-      @if (auth.usuario()?.rol === 'MEDICO') {
+      @if (cargando()) {
+        <p class="p-5" role="status">Cargando agenda…</p>
+      } @else if (errorAgenda()) {
+        <p class="error p-5" role="alert">{{ errorAgenda() }}</p>
+      } @else {
         <div class="px-5 pb-5">
-          <p class="mb-4 text-sm text-slate-500">Agenda de {{ auth.usuario()?.nombre_completo }} · PostgreSQL</p>
-          @if (cargando()) {
-            <p role="status">Cargando agenda…</p>
-          } @else if (errorAgenda()) {
-            <p class="error" role="alert">{{ errorAgenda() }}</p>
-          } @else {
-            @for (cita of citasReales(); track cita.id_cita) {
-              <article class="mb-3 flex flex-wrap items-center gap-5 rounded-xl border border-slate-100 p-5">
-                <p class="text-xl font-bold text-sky-700">{{ cita.fecha_hora_inicio | date: 'HH:mm' : '-0600' }}</p>
-                <div class="flex-1">
-                  <h2 class="text-base">{{ cita.paciente }}</h2>
-                  <p class="mt-1 text-sm text-slate-500">{{ cita.motivo }}</p>
-                </div>
-                <mc-status [value]="cita.estado" />
-                @if (cita.estado === 'PROGRAMADA' || cita.estado === 'CONFIRMADA') {
-                  <a class="btn-secondary" routerLink="/servicios/atenciones" [queryParams]="{ cita: cita.id_cita }">Registrar atención →</a>
-                }
-              </article>
-            } @empty {
-              <p class="empty">No hay citas registradas para esta fecha.</p>
-            }
+          @for (cita of rows(); track cita.id_cita) {
+            <article
+              class="mb-3 flex flex-wrap items-center gap-5 rounded-xl border border-slate-100 p-5"
+            >
+              <p class="text-xl font-bold text-sky-700">
+                {{ cita.fecha_hora_inicio | date: 'HH:mm' : '-0600' }}
+              </p>
+              <div class="flex-1">
+                <h2 class="text-base">{{ cita.paciente }}</h2>
+                <p class="mt-1 text-sm text-slate-500">{{ cita.medico }} · {{ cita.motivo }}</p>
+              </div>
+              <mc-status [value]="cita.estado" />
+              @if (
+                auth.can(['MEDICO']) &&
+                (cita.estado === 'PROGRAMADA' || cita.estado === 'CONFIRMADA')
+              ) {
+                <a
+                  class="btn-secondary"
+                  routerLink="/servicios/atenciones"
+                  [queryParams]="{ cita: cita.id_cita }"
+                  >Registrar atención →</a
+                >
+              }
+            </article>
+          } @empty {
+            <p class="empty">No hay citas registradas para esta fecha y médico.</p>
           }
         </div>
-      } @else {
-      <div class="px-5 pb-5">
-        @for (a of rows(); track a.id) {
-          <article
-            class="mb-3 flex flex-wrap items-center gap-5 rounded-xl border border-slate-100 p-5"
-          >
-            <div class="border-r border-slate-200 pr-5 text-xl font-bold text-sky-700">
-              {{ a.hora }}
-            </div>
-            <div class="min-w-48 flex-1">
-              <h2 class="text-base">{{ store.patient(a.pacienteId) }}</h2>
-              <p class="mt-1 text-xs text-slate-500">
-                {{ store.doctor(a.medicoId) }} · {{ a.motivo }}
-              </p>
-            </div>
-            <mc-status [value]="a.estado" />
-          </article>
-        } @empty {
-          <div class="empty">No hay citas para esta fecha y médico.</div>
-        }
-      </div>
       }
     </section>`,
 })
 export class Agenda {
-  store = inject(DemoStore);
   auth = inject(Auth);
-  date = signal(today());
-  doctor = signal(this.auth.role() === 'MEDICO' ? this.auth.medicoId() : 0);
   private agendaApi = inject(AgendaApi);
+  private medicosApi = inject(MedicosApi);
+  private destroyRef = inject(DestroyRef);
+  date = signal(fechaCostaRica());
+  doctor = signal('');
+  medicos = signal<MedicoDto[]>([]);
   citasReales = signal<CitaAgenda[]>([]);
   cargando = signal(false);
   errorAgenda = signal('');
-
+  rows = computed(() =>
+    this.citasReales().filter((c) => !this.doctor() || c.id_medico === this.doctor()),
+  );
   constructor() {
+    if (this.auth.usuario()?.rol !== 'MEDICO')
+      this.medicosApi
+        .listar()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (r) => this.medicos.set(r.data),
+          error: () => this.errorAgenda.set('No se pudo cargar el directorio médico.'),
+        });
     effect((onCleanup) => {
       const usuario = this.auth.usuario();
       const token = this.auth.token();
-      const idMedico = this.auth.idMedicoReal();
+      const id = this.auth.idMedicoReal();
       const fecha = this.date();
       this.citasReales.set([]);
       this.errorAgenda.set('');
       this.cargando.set(false);
-      if (usuario?.rol !== 'MEDICO') return;
-      if (!token || !idMedico) {
+      if (!token) return;
+      if (usuario?.rol === 'MEDICO' && !id) {
         this.errorAgenda.set('La sesión no tiene un perfil médico válido.');
         return;
       }
+      if (!fecha) {
+        this.errorAgenda.set('Selecciona una fecha de consulta.');
+        return;
+      }
       this.cargando.set(true);
-      const subscription = this.agendaApi.consultar(fecha, token).subscribe({
-        next: (respuesta) => {
-          this.citasReales.set(respuesta.data.filter((cita) => cita.id_medico === idMedico));
+      const peticion = this.agendaApi.consultar(fecha, token).subscribe({
+        next: (r) => {
+          this.citasReales.set(
+            usuario?.rol === 'MEDICO' ? r.data.filter((c) => c.id_medico === id) : r.data,
+          );
           this.cargando.set(false);
         },
         error: () => {
@@ -122,17 +126,7 @@ export class Agenda {
           this.cargando.set(false);
         },
       });
-      onCleanup(() => subscription.unsubscribe());
+      onCleanup(() => peticion.unsubscribe());
     });
   }
-
-  rows = computed(() =>
-    this.store
-      .data()
-      .citas.filter(
-        (x) => this.auth.usuario()?.rol !== 'MEDICO' &&
-          x.fecha === this.date() && (!this.doctor() || x.medicoId === this.doctor()),
-      )
-      .sort((a, b) => a.hora.localeCompare(b.hora)),
-  );
 }

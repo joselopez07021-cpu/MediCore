@@ -91,7 +91,18 @@ describe('Asistente flotante de MediCore', () => {
   it('limpia la conversación al salir y cancela respuestas pendientes del perfil anterior', async () => {
     const { fixture, chat } = await setup();
     const auth = TestBed.inject(Auth);
-    auth.login('ADMINISTRADOR');
+    auth.guardarSesion({
+      token: 'token-prueba',
+      token_type: 'Bearer',
+      usuario: {
+        id_usuario: '1',
+        nombre_usuario: 'admin',
+        nombre_completo: 'Admin',
+        correo: 'admin@example.com',
+        rol: 'ADMINISTRADOR',
+        id_medico: null,
+      },
+    });
     await fixture.whenStable();
     chat.toggle();
     chat.send('Mensaje del administrador');

@@ -1,52 +1,81 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { DemoStore } from '../../nucleo/almacen-demostracion';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PageHeader } from '../../compartidos/encabezado-pagina';
+import { ConsultasApi, ServicioDto } from '../../servicios/servicio-operaciones-api';
+import { mensajeError } from '../../nucleo/utilidades-api';
 @Component({
   standalone: true,
   imports: [PageHeader],
-  template: `<mc-page-header
+  template: ` <mc-page-header
       title="Servicios hospitalarios"
-      subtitle="Catálogo de servicios disponibles para registrar en una atención."
+      subtitle="Catálogo disponible para registrar atenciones."
       section="SERVICIOS / CATÁLOGO"
+    >
+      <button class="btn-secondary" [disabled]="cargando()" (click)="cargar()">Actualizar</button>
+    </mc-page-header>
+    @if (error()) {
+      <p class="error mb-4" role="alert">{{ error() }}</p>
+    }
+    @if (cargando()) {
+      <p role="status">Cargando servicios…</p>
+    }
+    <input
+      class="mb-5"
+      aria-label="Buscar servicios"
+      placeholder="Nombre o código…"
+      (input)="query.set($any($event.target).value)"
     />
-    <div class="mb-6 max-w-md">
-      <input
-        aria-label="Buscar servicios"
-        placeholder="Buscar servicio o categoría…"
-        (input)="query.set($any($event.target).value)"
-      />
-    </div>
-    <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-      @for (s of rows(); track s.id) {
+    <section class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+      @for (s of rows(); track s.id_servicio) {
         <article class="card p-6">
-          <div class="mb-5 flex items-center justify-between">
-            <span
-              class="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-50 text-2xl text-teal-600"
-              >✚</span
-            ><span class="badge badge-green">{{ s.categoria }}</span>
-          </div>
-          <h2>{{ s.nombre }}</h2>
-          <p class="mt-2 text-xs text-slate-400">SER-{{ s.id.toString().padStart(4, '0') }}</p>
-          <div class="mt-5 border-t border-slate-100 pt-4 text-xs text-slate-500">
-            {{ uses(s.id) }} atenciones con este servicio
-          </div>
+          <span class="badge">{{ s.codigo }}</span>
+          <h2 class="mt-4">{{ s.nombre }}</h2>
+          <p class="mt-3 text-sm text-slate-500">{{ s.descripcion }}</p>
+          <p class="mt-4 text-sm">
+            Duración estimada: {{ s.duracion_estimada_minutos ?? 'No definida' }} min
+          </p>
+          <p class="mt-2 text-xs text-slate-500">
+            {{ s.atenciones }} atenciones con este servicio en tu ámbito de consulta
+          </p>
         </article>
       } @empty {
-        <p class="empty">No se encontraron servicios.</p>
+        @if (!cargando()) {
+          <p class="empty">No se encontraron servicios.</p>
+        }
       }
-    </div>`,
+    </section>`,
 })
 export class Catalog {
-  store = inject(DemoStore);
+  private api = inject(ConsultasApi);
+  private destroyRef = inject(DestroyRef);
+  servicios = signal<ServicioDto[]>([]);
   query = signal('');
+  error = signal('');
+  cargando = signal(false);
   rows = computed(() =>
-    this.store
-      .data()
-      .servicios.filter((s) =>
-        (s.nombre + ' ' + s.categoria).toLowerCase().includes(this.query().toLowerCase()),
-      ),
+    this.servicios().filter((s) =>
+      `${s.nombre} ${s.codigo}`.toLowerCase().includes(this.query().trim().toLowerCase()),
+    ),
   );
-  uses(id: number) {
-    return this.store.data().atenciones.filter((x) => x.servicios.includes(id)).length;
+  constructor() {
+    this.cargar();
+  }
+  cargar() {
+    if (this.cargando()) return;
+    this.cargando.set(true);
+    this.error.set('');
+    this.api
+      .servicios()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (r) => {
+          this.servicios.set(r.data);
+          this.cargando.set(false);
+        },
+        error: (e) => {
+          this.error.set(mensajeError(e));
+          this.cargando.set(false);
+        },
+      });
   }
 }

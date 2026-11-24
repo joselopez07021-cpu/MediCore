@@ -24,10 +24,22 @@ export interface NuevoPacienteDto {
   telefono: string;
   correo: string;
 }
+export interface CitaPacienteDto {
+  id_cita: string;
+  fecha_hora_inicio: string;
+  motivo: string | null;
+  estado: string;
+  medico: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class PacientesApi {
   private http = inject(HttpClient);
+  historial(id: string) {
+    return this.http.get<{ message: string; data: CitaPacienteDto[] }>(
+      `${API_CONFIG.baseUrl}/pacientes/${id}/citas`,
+    );
+  }
 
   listar(): Observable<{
     message: string;
@@ -60,5 +72,19 @@ export class PacientesApi {
       message: string;
       data: PacienteDto;
     }>(`${API_CONFIG.baseUrl}/pacientes/${id}`, datos);
+  }
+  cambiarEstado(
+    id: string,
+    activo: boolean,
+  ): Observable<{
+    message: string;
+    data: PacienteDto;
+  }> {
+    return this.http.patch<{
+      message: string;
+      data: PacienteDto;
+    }>(`${API_CONFIG.baseUrl}/pacientes/${id}/estado`, {
+      activo,
+    });
   }
 }
