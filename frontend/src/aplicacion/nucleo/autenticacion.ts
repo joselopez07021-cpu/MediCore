@@ -1,7 +1,8 @@
-import { Injectable, signal, inject } from '@angular/core';
+import { Injectable, signal, inject, computed } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { Role } from './modelos';
 import { DemoStore } from './almacen-demostracion';
+import type { RespuestaLogin } from '../servicios/servicio-autenticacion-api';
 
 // Credenciales públicas, únicamente para presentar el flujo de acceso.
 export const DEMO_ACCOUNTS: Record<Role, string> = {
@@ -14,6 +15,21 @@ export const DEMO_PASSWORD = 'demo123';
 
 @Injectable({ providedIn: 'root' })
 export class Auth {
+
+  private sesionReal = signal<RespuestaLogin['data'] | null>(null);
+
+  readonly usuario = computed(
+    () => this.sesionReal()?.usuario ?? null,
+  );
+
+  readonly token = computed(
+    () => this.sesionReal()?.token ?? null,
+  );
+
+  guardarSesion(datos: RespuestaLogin['data']): void {
+    this.sesionReal.set(datos);
+  }
+
   private store = inject(DemoStore);
   readonly medicoId = signal<number | null>(this.restoreDoctor());
   readonly role = signal<Role | null>(this.restore());
@@ -46,15 +62,16 @@ export class Auth {
         sessionStorage.setItem('medicore-medico', String(this.medicoId()));
       else sessionStorage.removeItem('medicore-medico');
       sessionStorage.setItem('medicore-role', role);
-    } catch {}
+    } catch { }
   }
   logout() {
+    this.sesionReal.set(null);
     this.role.set(null);
     this.medicoId.set(null);
     try {
       sessionStorage.removeItem('medicore-medico');
       sessionStorage.removeItem('medicore-role');
-    } catch {}
+    } catch { }
   }
   can(roles: Role[]) {
     return this.role() === 'ADMINISTRADOR' || roles.includes(this.role()!);

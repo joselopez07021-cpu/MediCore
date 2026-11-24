@@ -180,11 +180,12 @@ export class Login {
       this.form.controls.password.value,
     ).subscribe({
       next: (respuesta) => {
-        this.enviando.set(false);
-        this.mensaje.set(
-          `Credenciales verificadas: ${respuesta.data.usuario.nombre_completo}`,
-        );
-      },
+      this.auth.guardarSesion(respuesta.data);
+      this.enviando.set(false);
+      this.mensaje.set(
+        `Credenciales verificadas: ${this.auth.usuario()?.nombre_completo}`,
+    );
+  },
       error: (fallo) => {
         this.enviando.set(false);
 
