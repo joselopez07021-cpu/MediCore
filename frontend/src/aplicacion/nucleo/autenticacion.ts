@@ -4,6 +4,8 @@ import { Role } from './modelos';
 import { DemoStore } from './almacen-demostracion';
 import type { RespuestaLogin } from '../servicios/servicio-autenticacion-api';
 
+export const CLAVE_TOKEN = 'medicore-token';
+
 // Credenciales públicas, únicamente para presentar el flujo de acceso.
 export const DEMO_ACCOUNTS: Record<Role, string> = {
   ADMINISTRADOR: 'admin',
@@ -35,6 +37,7 @@ export class Auth {
     this.sesionReal.set(datos);
     this.role.set(datos.usuario.rol);
     this.medicoId.set(null);
+    try { sessionStorage.setItem(CLAVE_TOKEN, datos.token); } catch { }
   }
 
   private store = inject(DemoStore);
@@ -76,6 +79,7 @@ export class Auth {
     this.role.set(null);
     this.medicoId.set(null);
     try {
+      sessionStorage.removeItem(CLAVE_TOKEN);
       sessionStorage.removeItem('medicore-medico');
       sessionStorage.removeItem('medicore-role');
     } catch { }

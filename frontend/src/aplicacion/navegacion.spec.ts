@@ -4,10 +4,8 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from './rutas-aplicacion';
 import { Auth } from './nucleo/autenticacion';
 import { DemoStore } from './nucleo/almacen-demostracion';
-import { seed } from './nucleo/datos-demostracion';
 import { Cares } from './modulos/servicios/atenciones';
 import { Patients } from './modulos/admision/pacientes';
-import { RecordEditor } from './compartidos/editor-registros';
 import { By } from '@angular/platform-browser';
 import { Login } from './modulos/autenticacion/inicio-sesion';
 import { Shell } from './estructura/estructura-principal';
@@ -16,12 +14,15 @@ import { Dashboard } from './modulos/inicio/inicio';
 import type { Role } from './nucleo/modelos';
 import type { RespuestaLogin } from './servicios/servicio-autenticacion-api';
 import { Api } from './servicios/servicio-api';
+import { AtencionesApi } from './servicios/servicio-atenciones-api';
 import { of } from 'rxjs';
 import { provideHttpClient } from '@angular/common/http';
 import {
   HttpTestingController,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
+
+import { PacientesApi } from './servicios/servicio-pacientes-api';
 
 describe('Páginas y permisos de MediCore', () => {
   function respuestaLogin(rol: Role, idMedico: string | null = null): RespuestaLogin {
@@ -55,6 +56,25 @@ describe('Páginas y permisos de MediCore', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         {
+          provide: AtencionesApi,
+          useValue: {
+            catalogos: () => of({ data: { servicios: [], insumos: [] } }),
+            pendientes: () => of({ data: [] }),
+            historial: () => of({ data: [], paginacion: { pagina_actual: 1, total_elementos: 0, total_paginas: 0, tiene_anterior: false, tiene_siguiente: false } }),
+            resumen: () => of({ data: { total_atenciones: 0, citas_pendientes: 0 } }),
+            cita: () => of({ data: { id_cita: '1', puede_registrar: false } }),
+          },
+        },
+        {
+          provide: PacientesApi,
+          useValue: {
+            listar: () => of({
+              message: 'Pacientes de prueba',
+              data: [],
+            }),
+          },
+        },
+        {
           provide: Api,
           useValue: {
             verificarConexion: () => of({
@@ -66,7 +86,7 @@ describe('Páginas y permisos de MediCore', () => {
         },
       ],
     });
-    TestBed.inject(DemoStore).data.set(seed());
+
   });
   it('renderiza todas las páginas principales con el perfil administrador', async () => {
     prepararSesion('ADMINISTRADOR');
@@ -102,51 +122,78 @@ describe('Páginas y permisos de MediCore', () => {
     await harness.navigateByUrl('/inventario/insumos');
     expect(TestBed.inject(Router).url).toBe('/inicio');
     await harness.navigateByUrl('/admision/pacientes');
-    expect(harness.routeNativeElement?.textContent).toContain('Registrar paciente');
+    expect(harness.routeNativeElement?.querySelector('h1')?.textContent)
+      .toContain('Pacientes');
   });
-  it('permite abrir un formulario reactivo y registrar un paciente sin reiniciarlo al detectar cambios', async () => {
-    prepararSesion('ADMINISTRADOR');
-    const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/admision/pacientes');
-    const page = harness.routeDebugElement!.query(By.directive(Patients))
-      .componentInstance as Patients;
-    page.open(null);
-    harness.detectChanges();
-    await harness.fixture.whenStable();
-    const editor = harness.routeDebugElement!.query(By.directive(RecordEditor))
-      .componentInstance as RecordEditor;
-    editor.form.patchValue({
-      nombre: 'Paciente de prueba',
-      documento: 'TEST-001',
-      nacimiento: '1990-01-01',
-      telefono: '617-555-0123',
-      correo: 'test@example.com',
+  it('carga pacientes desde HTTP y permite buscar por apellido', async () => {
+    TestBed.overrideProvider(PacientesApi, {
+      useFactory: () => new PacientesApi(),
     });
+
+    // Aquí continúa el resto la prueba
+
+    prepararSesion('ADMINISTRADOR');
+
+    const http = TestBed.inject(HttpTestingController);
+    const harness = await RouterTestingHarness.create();
+
+    await harness.navigateByUrl('/admision/pacientes');
+
+    const page = harness.routeDebugElement!
+      .query(By.directive(Patients))
+      .componentInstance as Patients;
+
+    expect(page.cargando()).toBe(true);
+
+    const solicitud = http.expectOne(
+      'http://localhost:3000/api/pacientes',
+    );
+
+    expect(solicitud.request.method).toBe('GET');
+
+    solicitud.flush({
+      message: 'Pacientes obtenidos correctamente',
+      data: [{
+        id_paciente: '9007199254740993',
+        identificacion: 'TEST-001',
+        nombre: 'María',
+        apellido: 'Soto',
+        fecha_nacimiento: null,
+        telefono: null,
+        correo: null,
+        direccion: null,
+        fecha_registro: '2026-11-24T12:00:00.000Z',
+        activo: true,
+      }],
+    });
+
     harness.detectChanges();
-    await harness.fixture.whenStable();
-    expect(editor.form.controls['nombre'].value).toBe('Paciente de prueba');
-    editor.submit();
-    harness.detectChanges();
-    expect(TestBed.inject(DemoStore).data().pacientes.at(-1)?.nombre).toBe('Paciente de prueba');
+
+    expect(page.cargando()).toBe(false);
+    expect(page.pacientes()[0].id_paciente)
+      .toBe('9007199254740993');
+    expect(harness.routeNativeElement?.textContent)
+      .toContain('María Soto');
+    expect(harness.routeNativeElement?.textContent)
+      .toContain('Sin teléfono');
+
+    page.query.set('SOTO');
+    expect(page.rows().length).toBe(1);
+
+    page.query.set('inexistente');
+    expect(page.rows().length).toBe(0);
+
+    http.verify();
   });
-  it('permite al administrador registrar una atención en los datos de demostración', async () => {
+  it('no abre una atención si el servidor no devuelve citas pendientes autorizadas', async () => {
     prepararSesion('ADMINISTRADOR');
     const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl('/servicios/atenciones?cita=1');
+    await harness.navigateByUrl('/servicios/atenciones');
     const page = harness.routeDebugElement!.query(By.directive(Cares)).componentInstance as Cares;
-    expect(page.editing()).toBe(true);
-    expect(page.form.controls.citaId.value).toBe('1');
-    expect(page.eligible().some((x) => x.id === 1)).toBe(true);
-    page.form.patchValue({ diagnostico: 'Control de prueba', servicios: [1] });
-    page.consumos.push(page.consumptionGroup());
-    page.consumos.at(0).patchValue({ insumoId: '1', cantidad: 2 });
-    page.save();
-    expect(
-      TestBed.inject(DemoStore)
-        .data()
-        .citas.find((x) => x.id === 1)?.estado,
-    ).toBe('ATENDIDA');
+    expect(page.eligible()).toEqual([]);
+    page.open('1');
     expect(page.editing()).toBe(false);
+    expect(page.error()).toContain('autorizada');
   });
   it.each(['1', '9007199254740993'])(
     'consulta la agenda real sin asociar el ID médico %s con registros demo',
@@ -208,13 +255,13 @@ describe('Páginas y permisos de MediCore', () => {
       expect(atenciones.eligible()).toEqual([]);
       expect(atenciones.rows()).toEqual([]);
       expect(atenciones.editing()).toBe(false);
-      atenciones.open(1);
+      atenciones.open('1');
       expect(atenciones.editing()).toBe(false);
       const antes = JSON.stringify(TestBed.inject(DemoStore).data());
-      atenciones.form.patchValue({ citaId: '1', diagnostico: 'No guardar en demo', servicios: [1] });
+      atenciones.form.patchValue({ citaId: '1', diagnostico: 'No guardar en demo', servicios: ['1'] });
       atenciones.save();
       expect(JSON.stringify(TestBed.inject(DemoStore).data())).toBe(antes);
-      expect(atenciones.error()).toContain('pendiente de integración');
+      expect(atenciones.error()).toContain('autorizada');
       auth.logout();
       expect(auth.idMedicoReal()).toBeNull();
       http.verify();

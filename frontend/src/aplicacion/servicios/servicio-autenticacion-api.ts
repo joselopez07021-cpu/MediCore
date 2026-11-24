@@ -26,6 +26,13 @@ export interface RespuestaLogin {
 export class AutenticacionApi {
   private http = inject(HttpClient);
 
+  consultarUsuario(token: string): Observable<{ message: string; data: UsuarioAutenticado }> {
+    return this.http.get<{ message: string; data: UsuarioAutenticado }>(
+      `${API_CONFIG.baseUrl}/auth/me`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+  }
+
   iniciarSesion(
     nombreUsuario: string,
     password: string,

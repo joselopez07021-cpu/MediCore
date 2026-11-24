@@ -1,57 +1,148 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
-import { DemoStore } from '../../nucleo/almacen-demostracion';
-import { Patient } from '../../nucleo/modelos';
+import {
+  FormBuilder,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
+import {
+  Component, DestroyRef, OnInit, computed, inject, signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  PacientesApi,
+  PacienteDto,
+} from '../../servicios/servicio-pacientes-api';
 import { PageHeader } from '../../compartidos/encabezado-pagina';
-import { RecordEditor, EditorField } from '../../compartidos/editor-registros';
-import { StatusBadge } from '../../compartidos/indicador-estado';
-import { today } from '../../nucleo/datos-demostracion';
-import { DialogFocus } from '../../compartidos/enfoque-dialogo';
+
 @Component({
   standalone: true,
-  imports: [PageHeader, RecordEditor, DatePipe, StatusBadge, DialogFocus],
-  templateUrl: './pacientes.html',
+  imports: [PageHeader, ReactiveFormsModule], templateUrl: './pacientes.html',
 })
-export class Patients {
-  store = inject(DemoStore);
+export class Patients implements OnInit {
+  private api = inject(PacientesApi);
+  private destroyRef = inject(DestroyRef);
+  private fb = inject(FormBuilder);
+
+  formulario = this.fb.nonNullable.group({
+    nombre: ['', [
+      Validators.required,
+      Validators.pattern(/\S/),
+      Validators.maxLength(80),
+    ]],
+    apellido: ['', [
+      Validators.required,
+      Validators.pattern(/\S/),
+      Validators.maxLength(100),
+    ]],
+    identificacion: ['', [
+      Validators.required,
+      Validators.pattern(/\S/),
+      Validators.maxLength(40),
+    ]],
+    fecha_nacimiento: ['', Validators.required],
+    telefono: ['', [
+      Validators.required,
+      Validators.pattern(/\S/),
+      Validators.maxLength(30),
+    ]],
+    correo: ['', [
+      Validators.required,
+      Validators.email,
+      Validators.maxLength(254),
+    ]],
+  });
+  pacientes = signal<PacienteDto[]>([]);
   query = signal('');
-  editing = signal<Patient | null | undefined>(undefined);
-  detail = signal<Patient | null>(null);
+  cargando = signal(false);
   error = signal('');
-  rows = computed(() =>
-    this.store
-      .data()
-      .pacientes.filter((p) =>
-        (p.nombre + ' ' + p.documento + ' ' + p.correo)
-          .toLowerCase()
-          .includes(this.query().toLowerCase()),
-      ),
-  );
-  fields: EditorField[] = [
-    { key: 'nombre', label: 'Nombre completo', required: true },
-    { key: 'documento', label: 'Documento de identidad', required: true },
-    { key: 'nacimiento', label: 'Fecha de nacimiento', type: 'date', required: true, max: today() },
-    { key: 'telefono', label: 'Teléfono', required: true },
-    { key: 'correo', label: 'Correo electrónico', type: 'email', required: true },
-  ];
-  open(p: Patient | null) {
+  guardando = signal(false);
+  errorRegistro = signal('');
+  mensajeRegistro = signal('');
+
+  rows = computed(() => {
+    const busqueda = this.query().trim().toLowerCase();
+
+    return this.pacientes().filter((paciente) =>
+      [
+        paciente.nombre,
+        paciente.apellido,
+        paciente.identificacion,
+        paciente.correo ?? '',
+      ].join(' ').toLowerCase().includes(busqueda),
+    );
+  });
+
+  ngOnInit(): void {
+    this.cargar();
+  }
+
+  cargar(): void {
+    if (this.cargando()) return;
+
+    this.cargando.set(true);
     this.error.set('');
-    this.editing.set(p);
+
+    this.api.listar()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (respuesta) => {
+          this.pacientes.set(respuesta.data);
+          this.cargando.set(false);
+        },
+        error: () => {
+          this.error.set('No se pudieron cargar los pacientes.');
+          this.cargando.set(false);
+        },
+      });
   }
-  values = computed(() => ({ ...this.editing() }));
-  history() {
-    return this.store
-      .data()
-      .citas.filter((x) => x.pacienteId === this.detail()?.id)
-      .sort((a, b) => b.fecha.localeCompare(a.fecha));
-  }
-  save(v: Record<string, any>) {
-    try {
-      if (v['nacimiento'] > today()) throw Error('La fecha de nacimiento no puede ser futura.');
-      this.store.savePatient({ ...v, id: this.editing()?.id || 0 } as Patient);
-      this.editing.set(undefined);
-    } catch (e) {
-      this.error.set((e as Error).message);
+  guardar(): void {
+    if (this.guardando()) return;
+
+    this.errorRegistro.set('');
+    this.mensajeRegistro.set('');
+    this.formulario.markAllAsTouched();
+
+    if (this.formulario.invalid) {
+      this.errorRegistro.set('Revisa los seis campos del formulario.');
+      return;
     }
+
+    const valores = this.formulario.getRawValue();
+
+    const datos = {
+      nombre: valores.nombre.trim(),
+      apellido: valores.apellido.trim(),
+      identificacion: valores.identificacion.trim(),
+      fecha_nacimiento: valores.fecha_nacimiento,
+      telefono: valores.telefono.trim(),
+      correo: valores.correo.trim(),
+    };
+
+    this.guardando.set(true);
+
+    this.api.crear(datos)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (respuesta) => {
+          this.pacientes.update((actuales) => [
+            ...actuales,
+            respuesta.data,
+          ]);
+
+          this.formulario.reset();
+          this.mensajeRegistro.set(respuesta.message);
+          this.guardando.set(false);
+        },
+        error: (error) => {
+          const mensaje = error.error?.message;
+
+          this.errorRegistro.set(
+            typeof mensaje === 'string'
+              ? mensaje
+              : 'No se pudo registrar el paciente. Intenta nuevamente.',
+          );
+
+          this.guardando.set(false);
+        },
+      });
   }
 }

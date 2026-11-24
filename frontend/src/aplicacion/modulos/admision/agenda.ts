@@ -54,12 +54,14 @@ import { AgendaApi, CitaAgenda } from '../../servicios/servicio-agenda-api';
                   <p class="mt-1 text-sm text-slate-500">{{ cita.motivo }}</p>
                 </div>
                 <mc-status [value]="cita.estado" />
+                @if (cita.estado === 'PROGRAMADA' || cita.estado === 'CONFIRMADA') {
+                  <a class="btn-secondary" routerLink="/servicios/atenciones" [queryParams]="{ cita: cita.id_cita }">Registrar atención →</a>
+                }
               </article>
             } @empty {
               <p class="empty">No hay citas registradas para esta fecha.</p>
             }
           }
-          <p class="mt-4 text-xs text-slate-500">El registro de atenciones desde esta agenda está pendiente de integración.</p>
         </div>
       } @else {
       <div class="px-5 pb-5">
@@ -77,14 +79,6 @@ import { AgendaApi, CitaAgenda } from '../../servicios/servicio-agenda-api';
               </p>
             </div>
             <mc-status [value]="a.estado" />
-            @if (auth.can(['MEDICO']) && (a.estado === 'PROGRAMADA' || a.estado === 'CONFIRMADA')) {
-              <a
-                routerLink="/servicios/atenciones"
-                [queryParams]="{ cita: a.id }"
-                class="btn-secondary"
-                >Registrar atención →</a
-              >
-            }
           </article>
         } @empty {
           <div class="empty">No hay citas para esta fecha y médico.</div>
