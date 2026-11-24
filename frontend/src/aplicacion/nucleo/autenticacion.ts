@@ -26,8 +26,15 @@ export class Auth {
     () => this.sesionReal()?.token ?? null,
   );
 
+  // Este ID pertenece a PostgreSQL; nunca debe usarse como ID de DemoStore.
+  readonly idMedicoReal = computed(() =>
+    this.usuario()?.rol === 'MEDICO' ? this.usuario()?.id_medico ?? null : null,
+  );
+
   guardarSesion(datos: RespuestaLogin['data']): void {
     this.sesionReal.set(datos);
+    this.role.set(datos.usuario.rol);
+    this.medicoId.set(null);
   }
 
   private store = inject(DemoStore);
@@ -73,21 +80,39 @@ export class Auth {
       sessionStorage.removeItem('medicore-role');
     } catch { }
   }
-  can(roles: Role[]) {
-    return this.role() === 'ADMINISTRADOR' || roles.includes(this.role()!);
+  can(roles: Role[]): boolean {
+    const rol = this.usuario()?.rol;
+
+    return !!rol && (
+      rol === 'ADMINISTRADOR' || roles.includes(rol)
+    );
   }
   verifyCredentials(role: Role, username: string, password: string) {
     return username.trim().toLowerCase() === DEMO_ACCOUNTS[role] && password === DEMO_PASSWORD;
   }
 }
-export const sessionGuard: CanActivateFn = (_, state) =>
-  inject(Auth).role()
+export const sessionGuard: CanActivateFn = (_, state) => {
+  const auth = inject(Auth);
+  const router = inject(Router);
+
+  return auth.usuario() && auth.token()
     ? true
-    : inject(Router).createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
+    : router.createUrlTree(['/login'], {
+      queryParams: { returnUrl: state.url },
+    });
+};
+
 export const roleGuard: CanActivateFn = (route, state) => {
   const auth = inject(Auth);
   const router = inject(Router);
-  if (!auth.role())
-    return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
-  return auth.can(route.data['roles'] || []) ? true : router.createUrlTree(['/inicio']);
+
+  if (!auth.usuario() || !auth.token()) {
+    return router.createUrlTree(['/login'], {
+      queryParams: { returnUrl: state.url },
+    });
+  }
+
+  return auth.can(route.data['roles'] || [])
+    ? true
+    : router.createUrlTree(['/inicio']);
 };

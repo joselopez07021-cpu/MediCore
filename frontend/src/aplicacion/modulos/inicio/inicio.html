@@ -7,7 +7,7 @@
   <div>
     <p class="eyebrow">TU HOSPITAL, EN UNA SOLA VISTA</p>
     <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-      Buen día, {{ auth.role() === 'MEDICO' ? 'Dra. Elena' : 'equipo' }}
+      Buen día, {{ auth.usuario()?.nombre_completo || 'equipo' }}
       <span class="text-teal-500">.</span>
     </h1>
     <p class="mt-2 text-sm text-slate-500">Este es el resumen operativo de Hospital Boston Vida.</p>
@@ -16,6 +16,12 @@
     ▦ {{ date | date: 'dd/MM/yyyy' }}
   </div>
 </div>
+@if (auth.usuario()?.rol === 'MEDICO') {
+  <p class="mb-5 rounded-lg border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900">
+    Tu agenda real está disponible en <a routerLink="/admision/agenda" class="link">Agenda médica</a>.
+    Los indicadores de esta página todavía utilizan datos de demostración.
+  </p>
+}
 <section class="relative mb-7 overflow-hidden rounded-2xl bg-sky-950 p-7 text-white sm:p-8">
   <div class="relative z-10 max-w-xl">
     <span class="text-[10px] font-semibold tracking-[.2em] text-teal-300"
@@ -112,7 +118,9 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="3" class="empty">No hay citas programadas para hoy.</td>
+              <td colspan="3" class="empty">
+                {{ auth.usuario()?.rol === 'MEDICO' ? 'Consulta tus citas en Agenda médica.' : 'No hay citas programadas para hoy.' }}
+              </td>
             </tr>
           }
         </tbody>

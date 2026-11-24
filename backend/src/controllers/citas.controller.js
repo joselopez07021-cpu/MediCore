@@ -156,9 +156,18 @@ export const consultarAgendaMedica = async (req, res) => {
   try {
     const { fecha, id_medico } = req.query;
 
+    let idMedicoAutorizado = id_medico;
+    if (req.usuario.roles.nombre === "MEDICO") {
+      const idPropio = req.usuario.medicos?.id_medico?.toString();
+      if (!idPropio || (id_medico !== undefined && id_medico !== idPropio)) {
+        return res.status(403).json({ message: "Solo puedes consultar tu propia agenda" });
+      }
+      idMedicoAutorizado = idPropio;
+    }
+
     const citas = await obtenerAgendaMedica(
       fecha,
-      id_medico
+      idMedicoAutorizado
     );
 
     return res.status(200).json({

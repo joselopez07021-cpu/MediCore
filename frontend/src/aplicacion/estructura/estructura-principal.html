@@ -18,7 +18,7 @@
       >
       <div class="hidden text-right md:block">
         <p class="text-sm font-semibold">
-          {{ auth.role() === 'MEDICO' ? store.doctor(auth.medicoId()!) : 'Usuario de demostración' }}
+          {{ auth.usuario()?.nombre_completo || 'Usuario' }}
         </p>
         <p class="text-xs text-slate-500">{{ auth.role() }}</p>
       </div>

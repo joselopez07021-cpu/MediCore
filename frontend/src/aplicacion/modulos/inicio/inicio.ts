@@ -32,7 +32,8 @@ estadoConexion = signal('Comprobando conexión...');
     this.store
       .data()
       .citas.filter(
-        (x) => x.fecha === today() && (this.auth.role() !== 'MEDICO' || x.medicoId === this.auth.medicoId()),
+        (x) => this.auth.usuario()?.rol !== 'MEDICO' &&
+          x.fecha === today() && (this.auth.role() !== 'MEDICO' || x.medicoId === this.auth.medicoId()),
       )
       .sort((a, b) => a.hora.localeCompare(b.hora)),
   );

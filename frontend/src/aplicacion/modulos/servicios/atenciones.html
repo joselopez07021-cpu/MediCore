@@ -2,8 +2,14 @@
   title="Atenciones médicas"
   subtitle="Registra servicios y consumos en una atención vinculada a una cita."
   section="SERVICIOS / ATENCIONES"
-  ><button class="btn-primary" (click)="open()">＋ Registrar atención</button></mc-page-header
+  ><button class="btn-primary" [disabled]="auth.usuario()?.rol === 'MEDICO'" (click)="open()">＋ Registrar atención</button></mc-page-header
 >
+@if (auth.usuario()?.rol === 'MEDICO') {
+  <p class="mb-5 rounded-lg border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900" role="status">
+    La agenda ya consulta PostgreSQL. El historial y registro de atenciones reales están pendientes de integración;
+    no se utilizan citas de demostración para tu perfil médico.
+  </p>
+}
 <div class="mb-6 grid gap-4 sm:grid-cols-3">
   <div class="card p-5">
     <p class="text-xs text-slate-500">Atenciones registradas</p>

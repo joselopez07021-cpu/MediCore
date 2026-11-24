@@ -46,6 +46,7 @@ export class Cares {
       .data()
       .citas.filter(
         (a) =>
+          this.auth.usuario()?.rol !== 'MEDICO' &&
           ['PROGRAMADA', 'CONFIRMADA'].includes(a.estado) &&
           (this.auth.role() !== 'MEDICO' || a.medicoId === this.auth.medicoId()),
       ),
@@ -56,6 +57,7 @@ export class Cares {
       .atenciones.filter((c) => {
         const a = this.appointment(c.citaId);
         return (
+          this.auth.usuario()?.rol !== 'MEDICO' &&
           (this.auth.role() !== 'MEDICO' || a?.medicoId === this.auth.medicoId()) &&
           (this.store.patient(a?.pacienteId || 0) + ' ' + c.diagnostico)
             .toLowerCase()
@@ -75,6 +77,7 @@ export class Cares {
     return this.store.data().servicios.find((s) => s.id === id)?.nombre || 'Servicio';
   }
   open(cita?: number) {
+    if (this.auth.usuario()?.rol === 'MEDICO') return;
     this.error.set('');
     this.form.reset({
       citaId: cita ? String(cita) : '',
@@ -95,6 +98,10 @@ export class Cares {
     this.router.navigate([], { relativeTo: this.route, queryParams: {} });
   }
   save() {
+    if (this.auth.usuario()?.rol === 'MEDICO') {
+      this.error.set('El registro de atenciones reales está pendiente de integración.');
+      return;
+    }
     this.form.markAllAsTouched();
     if (this.form.invalid) {
       this.error.set(
