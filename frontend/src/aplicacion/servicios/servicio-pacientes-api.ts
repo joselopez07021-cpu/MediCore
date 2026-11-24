@@ -48,4 +48,17 @@ export class PacientesApi {
       data: PacienteDto;
     }>(`${API_CONFIG.baseUrl}/pacientes`, datos);
   }
+
+  actualizar(
+    id: string,
+    datos: NuevoPacienteDto,
+  ): Observable<{
+    message: string;
+    data: PacienteDto;
+  }> {
+    return this.http.put<{
+      message: string;
+      data: PacienteDto;
+    }>(`${API_CONFIG.baseUrl}/pacientes/${id}`, datos);
+  }
 }

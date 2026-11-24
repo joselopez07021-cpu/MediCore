@@ -57,6 +57,7 @@ export class Patients implements OnInit {
   guardando = signal(false);
   errorRegistro = signal('');
   mensajeRegistro = signal('');
+  idEnEdicion = signal<string | null>(null);
 
   rows = computed(() => {
     const busqueda = this.query().trim().toLowerCase();
@@ -117,17 +118,29 @@ export class Patients implements OnInit {
       correo: valores.correo.trim(),
     };
 
+    const id = this.idEnEdicion();
+
+    const solicitud = id === null
+      ? this.api.crear(datos)
+      : this.api.actualizar(id, datos);
+
     this.guardando.set(true);
 
-    this.api.crear(datos)
+    solicitud
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (respuesta) => {
-          this.pacientes.update((actuales) => [
-            ...actuales,
-            respuesta.data,
-          ]);
+          this.pacientes.update((actuales) =>
+            id === null
+              ? [...actuales, respuesta.data]
+              : actuales.map((paciente) =>
+                paciente.id_paciente === id
+                  ? respuesta.data
+                  : paciente,
+              ),
+          );
 
+          this.idEnEdicion.set(null);
           this.formulario.reset();
           this.mensajeRegistro.set(respuesta.message);
           this.guardando.set(false);
@@ -138,11 +151,34 @@ export class Patients implements OnInit {
           this.errorRegistro.set(
             typeof mensaje === 'string'
               ? mensaje
-              : 'No se pudo registrar el paciente. Intenta nuevamente.',
-          );
+              : 'No se pudo guardar el paciente. Intenta nuevamente.',);
 
           this.guardando.set(false);
         },
       });
+  }
+  editar(paciente: PacienteDto): void {
+    if (this.guardando()) return;
+
+    this.idEnEdicion.set(paciente.id_paciente);
+    this.errorRegistro.set('');
+    this.mensajeRegistro.set('');
+
+    this.formulario.reset({
+      nombre: paciente.nombre,
+      apellido: paciente.apellido,
+      identificacion: paciente.identificacion,
+      fecha_nacimiento: paciente.fecha_nacimiento ?? '',
+      telefono: paciente.telefono ?? '',
+      correo: paciente.correo ?? '',
+    });
+  }
+  cancelarEdicion(): void {
+    if (this.guardando()) return;
+
+    this.idEnEdicion.set(null);
+    this.formulario.reset();
+    this.errorRegistro.set('');
+    this.mensajeRegistro.set('');
   }
 }
