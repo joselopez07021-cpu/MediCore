@@ -1,35 +1,54 @@
 <mc-page-header
   title="Reportes y análisis"
-  subtitle="Indicadores de citas, servicios e inventario."
+  subtitle="Control operativo e inteligencia de negocios hospitalaria"
   section="MEDICORE / ANÁLISIS"
 >
-  <button
-    class="btn-primary"
-    [disabled]="!reporte() || cargando() || invalid() || filtrosCambiados() || tab() === 'powerbi'"
-    (click)="export()"
-  >
-    Exportar CSV
-  </button>
-</mc-page-header>
-<div class="mb-5 flex flex-wrap gap-3" role="group" aria-label="Tipo de reporte">
-  @for (
-    t of [
-      ['citas', 'Citas y atenciones'],
-      ['servicios', 'Servicios hospitalarios'],
-      ['inventario', 'Inventario'],
-      ['powerbi', 'Power BI'],
-    ];
-    track t[0]
-  ) {
-    <button class="btn-secondary" [attr.aria-pressed]="tab() === t[0]" (click)="tab.set(t[0])">
-      {{ t[1] }}
+  @if (tab() !== 'powerbi') {
+    <button
+      class="btn-primary"
+      [disabled]="!reporte() || cargando() || invalid() || filtrosCambiados()"
+      (click)="export()"
+    >
+      Exportar CSV
     </button>
   }
-</div>
-@if (error()) {
-  <p class="error mb-4" role="alert">{{ error() }}</p>
-}
-@if (tab() !== 'powerbi') {
+</mc-page-header>
+<nav class="report-navigation card" aria-label="Categorías de reportes">
+  <div class="report-category" role="group" aria-labelledby="categoria-operativa">
+    <p class="category-label" id="categoria-operativa">Reportes operativos</p>
+    <div class="report-options">
+      @for (t of reportesOperativos; track t.id) {
+        <button
+          class="report-option"
+          [attr.aria-pressed]="tab() === t.id"
+          aria-controls="reportes-operativos"
+          (click)="seleccionarReporte(t.id)"
+        >
+          {{ t.nombre }}
+        </button>
+      }
+    </div>
+  </div>
+  <div class="report-category business-category" role="group" aria-labelledby="categoria-olap">
+    <p class="category-label" id="categoria-olap">Inteligencia de negocios</p>
+    <button
+      class="report-option"
+      [attr.aria-pressed]="tab() === 'powerbi'"
+      aria-controls="analisis-olap"
+      (click)="seleccionarReporte('powerbi')"
+    >
+      Análisis OLAP <span class="powerbi-label">Power BI</span>
+    </button>
+  </div>
+</nav>
+<div id="reportes-operativos" [hidden]="tab() === 'powerbi'">
+  <p class="mb-5 text-sm text-slate-500">
+    Los reportes operativos permiten consultar la información del funcionamiento diario del
+    hospital.
+  </p>
+  @if (error()) {
+    <p class="error mb-4" role="alert">{{ error() }}</p>
+  }
   <section class="card mb-6">
     <div class="toolbar">
       <label class="field"
@@ -146,19 +165,164 @@
       </p>
     </section>
   }
-} @else {
-  <section class="card p-7">
-    <h2>Power BI</h2>
-    @if (powerBiUrl) {
-      <p class="my-5">Abre el informe con tu cuenta autorizada.</p>
-      <a class="btn-primary" [href]="powerBiUrl" target="_blank" rel="noopener noreferrer"
-        >Abrir informe</a
-      >
-    } @else {
-      <p class="mt-4 text-sm text-slate-500">
-        El equipo todavía debe publicar el informe y configurar su enlace. Puedes consultar y
-        exportar los reportes de las otras pestañas.
+</div>
+<!-- Mantener la instancia al cambiar de categoría conserva la navegación y los filtros de Power BI. -->
+<div id="analisis-olap" [hidden]="tab() !== 'powerbi'">
+  @if (olapIniciado()) {
+    <section class="olap-intro" aria-labelledby="titulo-olap">
+      <div>
+        <p class="category-label">Inteligencia de negocios / Power BI</p>
+        <h2 id="titulo-olap">Análisis multidimensional OLAP</h2>
+        <p class="olap-subtitle">
+          Inteligencia de negocios y apoyo a la toma de decisiones hospitalarias.
+        </p>
+      </div>
+      <div class="gateway-note">
+        <span class="gateway-dot" aria-hidden="true"></span>
+        <div>
+          <strong>PostgreSQL · Gateway</strong>
+          <span>Conexión configurada · Estado no verificado</span>
+        </div>
+      </div>
+    </section>
+    <p class="olap-description">
+      Explora la información por fecha, médico, especialidad, servicio e insumo para identificar
+      tendencias y apoyar la toma de decisiones.
+    </p>
+    <section class="academic-notice" aria-label="Alcance de la publicación">
+      <strong>Publicación académica temporal</strong>
+      <p>
+        Este informe público contiene exclusivamente datos ficticios. Cualquier persona con el
+        enlace puede consultarlo; su acceso no está protegido por la autenticación de MediCore.
       </p>
-    }
-  </section>
-}
+    </section>
+    <section class="card olap-viewer" #visorOlap aria-label="Informe interactivo de Power BI">
+      <div class="viewer-toolbar">
+        <div>
+          <h3>Informe hospitalario</h3>
+          <p>Tres páginas · Citas y atenciones, servicios hospitalarios e inventario e insumos</p>
+        </div>
+        @if (powerBiSrc) {
+          <div class="viewer-actions">
+            <button
+              class="btn-secondary"
+              (click)="recargarPowerBi()"
+              aria-describedby="nota-recarga"
+              title="Recarga la visualización; no actualiza el modelo semántico"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1" />
+              </svg>
+              Recargar visualización
+            </button>
+            <button
+              class="btn-secondary"
+              (click)="alternarPantallaCompleta(visorOlap)"
+              [attr.aria-pressed]="pantallaCompleta()"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5" />
+              </svg>
+              {{ pantallaCompleta() ? 'Salir de pantalla completa' : 'Pantalla completa' }}
+            </button>
+            <a class="btn-primary" [href]="powerBiUrl" target="_blank" rel="noopener noreferrer">
+              Abrir informe <span class="sr-only">en otra pestaña</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M14 3h7v7m0-7L10 14M10 3H4a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-6"
+                />
+              </svg>
+            </a>
+          </div>
+        }
+      </div>
+      @if (errorPantallaCompleta()) {
+        <p class="error mx-5 mb-4" role="alert">{{ errorPantallaCompleta() }}</p>
+      }
+      @if (powerBiSrc; as src) {
+        <div class="viewer-guidance">
+          Usa la navegación del informe para cambiar de página y sus segmentadores para filtrar.
+          Puedes explorar la jerarquía temporal: año, trimestre, mes y día.
+        </div>
+        <div class="report-stage" [attr.aria-busy]="estadoPowerBi() === 'cargando'">
+          @if (estadoPowerBi() === 'cargando') {
+            <div class="loading-report" role="status">
+              <span class="loading-spinner" aria-hidden="true"></span>
+              <strong>Cargando visualización de Power BI…</strong>
+              <span>La carga del informe depende del servicio de Microsoft.</span>
+            </div>
+          }
+          @if (estadoPowerBi() === 'demorado' || estadoPowerBi() === 'error') {
+            <div class="viewer-warning" role="status">
+              <strong>
+                {{
+                  estadoPowerBi() === 'error'
+                    ? 'No se pudo cargar la visualización.'
+                    : 'La visualización está tardando más de lo esperado.'
+                }}
+              </strong>
+              Comprueba tu conexión, recarga la visualización o abre el informe en otra pestaña.
+            </div>
+          }
+          @for (version of [versionPowerBi()]; track version) {
+            <iframe
+              [src]="src"
+              title="Análisis OLAP hospitalario de MediCore: citas, servicios e inventario"
+              allow="fullscreen"
+              allowfullscreen
+              referrerpolicy="no-referrer"
+              (load)="documentoPowerBiCargado()"
+              (error)="falloPowerBi()"
+            ></iframe>
+          }
+        </div>
+        <details class="viewer-help">
+          <summary>¿El informe aparece vacío o muestra un error?</summary>
+          <p>
+            MediCore no puede verificar el contenido de este informe externo. Comprueba tu conexión
+            y los bloqueadores del navegador; prueba los controles «Recargar visualización» o «Abrir
+            informe». Si el problema continúa, la publicación puede no estar disponible.
+          </p>
+        </details>
+      } @else {
+        <div class="viewer-empty" role="status">
+          <span class="empty-report-icon" aria-hidden="true">▥</span>
+          <h3>Informe no disponible</h3>
+          <p>
+            El enlace de publicación no está configurado o no tiene un formato válido de Power BI.
+            Puedes seguir consultando y exportando los reportes operativos.
+          </p>
+        </div>
+      }
+    </section>
+    <section
+      class="card mt-5 grid gap-4 p-5 min-[1100px]:grid-cols-2"
+      aria-labelledby="titulo-actualizacion"
+    >
+      <div>
+        <h3 id="titulo-actualizacion" class="text-sm font-bold">
+          Actualización programada de datos
+        </h3>
+        <p class="mt-1 text-xs leading-relaxed text-slate-500">
+          PostgreSQL mediante On-premises Data Gateway · Conexión SSL configurada
+        </p>
+      </div>
+      <div>
+        <p class="text-xs font-semibold leading-relaxed tabular-nums">
+          07:00 · 09:00 · 11:00 · 13:00 · 15:00 · 17:00 · 19:00 · 21:00
+        </p>
+        <p class="mt-1 text-xs leading-relaxed text-slate-500">
+          Hora de Costa Rica (UTC−6) · Ocho actualizaciones diarias configuradas en Power BI.
+        </p>
+      </div>
+      <p
+        id="nota-recarga"
+        class="border-t border-slate-200 pt-3 text-xs leading-relaxed text-slate-500 min-[1100px]:col-span-2"
+      >
+        Recargar la visualización no fuerza la actualización del modelo semántico ni de los datos de
+        PostgreSQL. La publicación pública puede presentar retrasos por caché. Estos horarios
+        describen la programación configurada, no confirman su ejecución.
+      </p>
+    </section>
+  }
+</div>
