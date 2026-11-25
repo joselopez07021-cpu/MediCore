@@ -1,0 +1,139 @@
+{
+  "version": "1.1.0",
+  "diagrams": [
+    {
+      "ordinal": 0,
+      "scrollPosition": {
+        "x": 0,
+        "y": 0
+      },
+      "nodes": [
+        {
+          "location": {
+            "x": 1609.833426214909,
+            "y": 501.79904137149
+          },
+          "nodeIndex": "dim_fecha",
+          "nodeLineageTag": "d38258aa-aadc-4cc4-8518-5ee414a409b8",
+          "size": {
+            "height": 200,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 334.22213763870064,
+            "y": 181.99669042777657
+          },
+          "nodeIndex": "dim_insumos",
+          "nodeLineageTag": "7f336ec0-d141-4d9a-9078-df53c22edc33",
+          "size": {
+            "height": 272,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 916.80178965817333,
+            "y": 129.55080727936308
+          },
+          "nodeIndex": "dim_medicos",
+          "nodeLineageTag": "e2ec3d64-d8cc-4c9d-a9d1-846546a26b1f",
+          "size": {
+            "height": 176,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 479.996179282047,
+            "y": -50
+          },
+          "nodeIndex": "dim_servicios",
+          "nodeLineageTag": "c56de52d-1cdc-42b5-b16b-6cc05ca42b8b",
+          "size": {
+            "height": 176,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 957.48833961104481,
+            "y": 535.25993514830543
+          },
+          "nodeIndex": "fact_atenciones",
+          "nodeLineageTag": "696c62d9-544d-44f8-8bd2-e57271ab7b0e",
+          "size": {
+            "height": 200,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 667.86155982001242,
+            "y": 555.41259330784919
+          },
+          "nodeIndex": "fact_citas",
+          "nodeLineageTag": "554bb19e-c18b-4b3d-b2e6-4a2002fa2081",
+          "size": {
+            "height": 200,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 624.2046361572468,
+            "y": 277.13493475694486
+          },
+          "nodeIndex": "fact_consumos",
+          "nodeLineageTag": "13a21992-fa84-46ff-871d-e6f2447c0a48",
+          "size": {
+            "height": 224,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 50,
+            "y": 130.82514368236963
+          },
+          "nodeIndex": "fact_movimientos",
+          "nodeLineageTag": "eeb62c9a-af4c-4b89-b8de-8dcb65341af8",
+          "size": {
+            "height": 224,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 1233.6243228452195,
+            "y": 251.50243257618433
+          },
+          "nodeIndex": "fact_servicios",
+          "nodeLineageTag": "c40cf5cb-397f-43d0-b8b2-2f1692c86542",
+          "size": {
+            "height": 224,
+            "width": 234
+          },
+          "zIndex": 0
+        }
+      ],
+      "name": "Todas las tablas",
+      "zoomValue": 63.287087723234038,
+      "pinKeyFieldsToTop": false,
+      "showExtraHeaderInfo": false,
+      "hideKeyFieldsWhenCollapsed": false,
+      "tablesLocked": false
+    }
+  ],
+  "selectedDiagram": "Todas las tablas",
+  "defaultDiagram": "Todas las tablas"
+}

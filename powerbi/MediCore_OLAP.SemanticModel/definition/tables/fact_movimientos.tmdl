@@ -1,0 +1,115 @@
+table fact_movimientos
+	lineageTag: eeb62c9a-af4c-4b89-b8de-8dcb65341af8
+
+	measure Movimientos = COUNTROWS(fact_movimientos)
+		formatString: 0
+		lineageTag: ae89b286-9caf-49b8-b7bb-120317338617
+
+	measure 'Entradas inventario' =
+			CALCULATE(
+			    [Movimientos],
+			    fact_movimientos[tipo_movimiento] = "ENTRADA"
+			)
+		formatString: 0
+		lineageTag: de257999-db85-41aa-8f3b-4057e7b1a111
+
+	measure 'Salidas inventario' =
+			CALCULATE(
+			    [Movimientos],
+			    fact_movimientos[tipo_movimiento] = "SALIDA"
+			)
+		formatString: 0
+		lineageTag: fc8d1446-629c-49d5-8bee-4d3b00966f42
+
+	measure 'Cantidad entradas' =
+			IF(
+			    HASONEVALUE(dim_insumos[unidad_medida]),
+			    CALCULATE(
+			        SUM(fact_movimientos[cantidad]),
+			        fact_movimientos[tipo_movimiento] = "ENTRADA"
+			    ),
+			    BLANK()
+			)
+		lineageTag: 37b9d0c4-0943-40ef-a223-0c56291a057e
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Cantidad salidas' =
+			IF(
+			    HASONEVALUE(dim_insumos[unidad_medida]),
+			    CALCULATE(
+			        SUM(fact_movimientos[cantidad]),
+			        fact_movimientos[tipo_movimiento] = "SALIDA"
+			    ),
+			    BLANK()
+			)
+		lineageTag: 6e6d5ef2-405f-446c-89f7-b7c01b3421b4
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column id_movimiento
+		dataType: string
+		lineageTag: e1f356b7-fb19-4de2-918a-8832414df02c
+		summarizeBy: none
+		sourceColumn: id_movimiento
+
+		annotation SummarizationSetBy = Automatic
+
+	column id_insumo
+		dataType: string
+		lineageTag: 08a60989-7ddf-4a84-9278-fd996fe214d6
+		summarizeBy: none
+		sourceColumn: id_insumo
+
+		annotation SummarizationSetBy = Automatic
+
+	column fecha
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 3af56b28-1741-4b31-a702-f7c6f8695a23
+		summarizeBy: none
+		sourceColumn: fecha
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column tipo_movimiento
+		dataType: string
+		lineageTag: 5d172d84-3379-4b7c-9127-2731ab25991b
+		summarizeBy: none
+		sourceColumn: tipo_movimiento
+
+		annotation SummarizationSetBy = Automatic
+
+	column cantidad
+		dataType: double
+		lineageTag: cfa2d76e-202f-4869-b31c-05dc4d112680
+		summarizeBy: sum
+		sourceColumn: cantidad
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column origen
+		dataType: string
+		lineageTag: b8149cdd-8b61-4022-988c-38cb363d5741
+		summarizeBy: none
+		sourceColumn: origen
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fact_movimientos = m
+		mode: import
+		source =
+				let
+				    Origen = PostgreSQL.Database("localhost:5433", "medicore"),
+				    analitica_fact_movimientos = Origen{[Schema="analitica",Item="fact_movimientos"]}[Data]
+				in
+				    analitica_fact_movimientos
+
+	annotation PBI_NavigationStepName = Navegación
+
+	annotation PBI_ResultType = Table
+

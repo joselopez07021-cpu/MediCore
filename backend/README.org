@@ -121,13 +121,38 @@ Configurar:
 DATABASE_URL="postgresql://postgres:TU_CONTRASENA@localhost:5432/medicore_demo"
 PORT=3000
 NODE_ENV=development
+CORS_ORIGIN="http://localhost:4200"
+JWT_SECRET=""
+JWT_EXPIRES_IN="1h"
 #+end_src
 
 Reemplazar TU_CONTRASENA por la contraseña real de PostgreSQL.
 
+Generar un secreto propio para JWT_SECRET:
+
+#+begin_src bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+#+end_src
+
+No usar una cadena de ejemplo como secreto de una instalación real.
+
 Si contiene caracteres especiales, codificarlos para una URL.
 
 IMPORTANTE: Nunca subir .env a GitHub.
+
+Las contraseñas de usuarios de demostración se configuran únicamente en el entorno
+local mediante DEMO_ADMIN_PASSWORD, DEMO_ADMISION_PASSWORD, DEMO_MEDICO_PASSWORD y
+DEMO_INVENTARIO_PASSWORD. Completar esas variables de .env.example en .env antes
+de crear usuarios nuevos con las semillas. No se incluyen valores predeterminados.
+La siembra no cambia contraseñas de usuarios existentes. El script
+scripts/set-demo-passwords.js solo debe ejecutarse expresamente para restablecer
+las cuentas ficticias; no ejecutarlo en una base con usuarios reales.
+
+En pruebaAPI/TestLinux, ejecutar primero la petición de login nombrada. REST Client
+solicita la contraseña local mediante un prompt y obtiene el token de la respuesta;
+no pegar contraseñas ni JWT dentro de los archivos .http. Para probar otro rol,
+usar el nombre de su petición de login en la referencia de @token.
+Referencia: https://github.com/Huachao/vscode-restclient#variables
 
 ** 5. Ejecutar migraciones de Prisma
 
@@ -256,3 +281,45 @@ No ejecutar dbSeed sobre bases que contengan información real.
 8. Ejecutar pnpm exec prisma generate.
 9. Ejecutar pnpm run dbSeed.
 10. Ejecutar pnpm run dev.
+
+* Integración completa con Angular
+
+El frontend se ejecuta en http://localhost:4200 y utiliza API_CONFIG.baseUrl.
+Las operaciones se autentican con JWT Bearer; la ayuda de navegación y health
+son públicos. El rol y el perfil médico se consultan en la base de datos.
+
+- Pacientes: consulta, registro, edición, estado e historial de citas.
+- Citas: programación, edición, estados y agenda con aislamiento médico.
+- Atenciones: transacción conjunta de atención, servicios, consumos y stock.
+- Inventario: insumos, categorías, entradas, salidas y movimientos de atención.
+- Inicio: indicadores y datos autorizados según rol.
+- Consultas: catálogo, directorio de usuarios y reportes administrativos.
+- Asistente: ayuda determinista de navegación; no es IA generativa.
+
+La migración 1_analitica agrega vistas de lectura para Power BI sin datos
+identificativos de pacientes ni notas clínicas. No publica informes.
+
+Consultar los documentos Word de integración y Power BI del equipo.
+
+* Pruebas reproducibles
+
+#+begin_src powershell
+pnpm.cmd test
+pnpm.cmd run test:integration
+#+end_src
+
+La integración necesita una cuenta PostgreSQL con permiso CREATE DATABASE.
+Crea y elimina una base temporal medicore_test_<pid>_<timestamp>;
+no borra ni siembra la base configurada en DATABASE_URL.
+
+Para comprobar también la interfaz, levantar Angular en localhost:4200 y
+contar con Microsoft Edge instalado:
+
+#+begin_src powershell
+pnpm.cmd run test:browser
+#+end_src
+
+BROWSER_EXECUTABLE permite indicar otro ejecutable compatible de Chromium.
+La prueba usa playwright-core y el navegador instalado, sin descargar uno.
+Las llamadas de API del contexto de prueba se dirigen a la base temporal.
+Las capturas de datos sintéticos se guardan en docs/evidencias.

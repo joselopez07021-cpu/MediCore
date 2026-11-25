@@ -1,15 +1,17 @@
 # citas.http
 @baseUrl = http://localhost:3000/api
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUxOTQxODgsImV4cCI6MTc5NTE5Nzc4OCwic3ViIjoiMiJ9.W9NCcYiH6c_Dp-5V_Ttgpi7zOgaXO05S5jNxSOxk2ac
+@token = {{login.response.body.data.token}}
 @idCita = 1
 
 ### Login Recepcion - ADMISION
+# @name login
+# @prompt demoPassword Contraseña local del usuario de demostración
 POST http://localhost:3000/api/auth/login
 Content-Type: application/json
 
 {
   "nombre_usuario": "recepcion.demo",
-  "password": "Recepcion123!"
+  "password": "{{demoPassword}}"
 }
 
 ### Registrar cita médica

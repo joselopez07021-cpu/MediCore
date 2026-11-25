@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "MediCore_OLAP"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "e3fa3ca3-8be6-4363-ac01-2bb0ad4da19b"
+  }
+}

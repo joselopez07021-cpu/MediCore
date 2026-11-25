@@ -1,40 +1,63 @@
 <mc-page-header
   title="Inventario hospitalario"
-  subtitle="Controla los insumos y anticipa las necesidades de reposición."
+  subtitle="Controla insumos y existencias."
   section="INVENTARIO / INSUMOS"
-  ><a routerLink="/inventario/movimientos" class="btn-secondary">Registrar movimiento</a
-  ><button class="btn-primary" (click)="open(null)">＋ Nuevo insumo</button></mc-page-header
 >
+  <a routerLink="/inventario/movimientos" class="btn-secondary">Registrar movimiento</a>
+  <button class="btn-secondary" [disabled]="cargando() || guardando()" (click)="cargar()">
+    Actualizar
+  </button>
+  <button class="btn-primary" [disabled]="cargando() || guardando()" (click)="open(null)">
+    ＋ Nuevo insumo
+  </button>
+</mc-page-header>
+@if (error() && editing() === undefined) {
+  <p class="error mb-4" role="alert">{{ error() }}</p>
+}
+@if (aviso()) {
+  <p class="mb-4 text-sm text-teal-700" role="status">{{ aviso() }}</p>
+}
 <div class="mb-6 grid gap-4 sm:grid-cols-3">
-  <div class="card p-5">
-    <p class="text-xs text-slate-500">Insumos en catálogo</p>
-    <p class="mt-2 text-3xl font-bold text-slate-900">{{ store.data().insumos.length }}</p>
-  </div>
-  <div class="card p-5">
-    <p class="text-xs text-slate-500">Categorías de insumos</p>
-    <p class="mt-2 text-3xl font-bold text-slate-900">{{ categories().length }}</p>
-  </div>
-  <button class="card p-5 text-left hover:border-amber-300" (click)="low.set(!low())">
-    <p class="text-xs text-amber-600">Requieren reposición →</p>
-    <p class="mt-2 text-3xl font-bold text-amber-600">{{ store.lowStock().length }}</p>
+  <article class="card p-5">
+    <p>Insumos activos</p>
+    <strong class="text-3xl">{{ insumos().length }}</strong>
+  </article>
+  <article class="card p-5">
+    <p>Categorías disponibles</p>
+    <strong class="text-3xl">{{ categorias().length }}</strong>
+  </article>
+  <button class="card p-5 text-left" (click)="low.set(!low()); pagina.set(1)">
+    <p>Requieren reposición</p>
+    <strong class="text-3xl text-amber-700">{{ bajas().length }}</strong>
   </button>
 </div>
 <section class="card">
   <div class="toolbar">
     <input
       aria-label="Buscar insumos"
-      placeholder="Buscar por nombre o categoría…"
-      (input)="query.set($any($event.target).value)"
-    /><select aria-label="Filtrar categoría" (change)="category.set($any($event.target).value)">
+      placeholder="Nombre, código o categoría…"
+      (input)="query.set($any($event.target).value); pagina.set(1)"
+    />
+    <select
+      aria-label="Filtrar categoría"
+      (change)="category.set($any($event.target).value); pagina.set(1)"
+    >
       <option value="">Todas las categorías</option>
-      @for (c of categories(); track c) {
-        <option>{{ c }}</option>
-      }</select
-    ><label class="flex items-center gap-2 text-xs"
-      ><input type="checkbox" [checked]="low()" (change)="low.set($any($event.target).checked)" />
-      Solo existencias bajas</label
+      @for (c of categorias(); track c.id_categoria) {
+        <option [value]="c.id_categoria">{{ c.nombre }}</option>
+      }
+    </select>
+    <label class="flex items-center gap-2 text-sm"
+      ><input
+        type="checkbox"
+        [checked]="low()"
+        (change)="low.set($any($event.target).checked); pagina.set(1)"
+      />Solo existencias bajas</label
     >
   </div>
+  @if (cargando()) {
+    <p class="p-5" role="status">Cargando inventario…</p>
+  }
   <div class="table-wrap">
     <table class="data-table">
       <thead>
@@ -44,36 +67,34 @@
           <th>Existencia</th>
           <th>Mínimo</th>
           <th>Estado</th>
-          <th></th>
+          <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
-        @for (p of rows(); track p.id) {
+        @for (p of visibles(); track p.id_insumo) {
           <tr>
-            <td class="font-semibold text-slate-800">
-              {{ p.nombre }}
-              <p class="mt-1 text-[11px] font-normal text-slate-400">
-                INS-{{ p.id.toString().padStart(4, '0') }}
-              </p>
+            <td>
+              <p class="font-semibold">{{ p.nombre }}</p>
+              <p class="text-xs text-slate-500">{{ p.codigo }}</p>
             </td>
             <td>{{ p.categoria }}</td>
+            <td>{{ p.stock_actual }} {{ p.unidad_medida }}</td>
+            <td>{{ p.stock_minimo }}</td>
             <td>
-              <strong [class.text-amber-600]="p.stock <= p.minimo">{{ p.stock }}</strong>
-              <span class="text-xs text-slate-400">{{ p.unidad }}</span>
+              <span class="badge">{{ p.estado }}</span>
             </td>
-            <td>{{ p.minimo }}</td>
             <td>
-              <span
-                class="badge"
-                [class.badge-green]="p.stock > p.minimo"
-                [class.badge-red]="p.stock === 0"
-                [class.text-amber-700]="p.stock > 0 && p.stock <= p.minimo"
-                >{{
-                  p.stock === 0 ? 'AGOTADO' : p.stock <= p.minimo ? 'REPOSICIÓN' : 'DISPONIBLE'
-                }}</span
-              >
+              <div class="flex gap-3">
+                <button class="link" [disabled]="guardando()" (click)="open(p)">Editar</button
+                ><button
+                  class="link text-rose-600"
+                  [disabled]="guardando()"
+                  (click)="desactivando.set(p)"
+                >
+                  Desactivar
+                </button>
+              </div>
             </td>
-            <td><button class="link" (click)="open(p)">Editar</button></td>
           </tr>
         } @empty {
           <tr>
@@ -83,17 +104,35 @@
       </tbody>
     </table>
   </div>
-  <p class="border-t border-slate-100 p-4 text-xs text-slate-400">
-    Inventario general · Las existencias se actualizan mediante movimientos y consumos de atención.
+  <mc-paginador [total]="rows().length" [pagina]="paginaActual()" (cambio)="pagina.set($event)" />
+  <p class="border-t p-4 text-xs text-slate-500">
+    Los insumos nuevos comienzan en cero. Las existencias cambian mediante movimientos y consumos de
+    atención.
   </p>
 </section>
 @if (editing() !== undefined) {
   <mc-editor
     [title]="editing() ? 'Editar insumo' : 'Nuevo insumo'"
-    [fields]="fields"
+    [fields]="fields()"
     [values]="values()"
     [error]="error()"
+    [busy]="guardando()"
     (save)="save($event)"
     (cancel)="editing.set(undefined)"
   />
+}
+@if (desactivando(); as p) {
+  <div class="modal-backdrop">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="desactivar-insumo">
+      <h2 id="desactivar-insumo">Desactivar insumo</h2>
+      <p class="my-5">¿Desactivar {{ p.nombre }}? Su historial de movimientos se conservará.</p>
+      <div class="flex justify-end gap-3">
+        <button class="btn-secondary" [disabled]="guardando()" (click)="desactivando.set(null)">
+          Volver</button
+        ><button class="btn-primary" [disabled]="guardando()" (click)="desactivar(p)">
+          Desactivar
+        </button>
+      </div>
+    </section>
+  </div>
 }

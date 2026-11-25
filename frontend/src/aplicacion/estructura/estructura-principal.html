@@ -18,7 +18,7 @@
       >
       <div class="hidden text-right md:block">
         <p class="text-sm font-semibold">
-          {{ auth.role() === 'MEDICO' ? store.doctor(auth.medicoId()!) : 'Usuario de demostración' }}
+          {{ auth.usuario()?.nombre_completo || 'Usuario' }}
         </p>
         <p class="text-xs text-slate-500">{{ auth.role() }}</p>
       </div>
@@ -98,15 +98,3 @@
   <span>MediCore ERP · Hospital Privado Boston Vida</span
   ><span>Proyecto académico · UCR · Datos ficticios</span>
 </footer>
-@if (store.notice()) {
-  <div
-    role="status"
-    class="fixed bottom-24 right-6 z-50 flex max-w-sm items-center gap-4 rounded-xl bg-sky-950 p-4 text-sm text-white shadow-xl"
-  >
-    <span>{{ store.notice() }}</span
-    ><button (click)="store.notice.set('')" aria-label="Cerrar mensaje">✕</button>
-  </div>
-}
-@if (store.storageWarning()) {
-  <div role="alert" class="bg-amber-100 p-3 text-sm">{{ store.storageWarning() }}</div>
-}

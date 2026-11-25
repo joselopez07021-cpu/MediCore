@@ -1,15 +1,17 @@
 # inventario.http
 @baseUrl = http://localhost:3000/api
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUxNDcwMjEsImV4cCI6MTc5NTE1MDYyMSwic3ViIjoiNSJ9.LCiFjkQiwyD-aLz9xQOMoRWvHfyh9MFzllHsTERGbuE
+@token = {{login.response.body.data.token}}
 @idInsumo = 1
 
 ### Login Inventario
+# @name login
+# @prompt demoPassword Contraseña local del usuario de demostración
 POST http://localhost:3000/api/auth/login
 Content-Type: application/json
 
 {
   "nombre_usuario": "inventario.demo",
-  "password": "Inventario123!"
+  "password": "{{demoPassword}}"
 }
 
 ### Obtener categorías

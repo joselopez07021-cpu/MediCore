@@ -1,114 +1,228 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { DemoStore } from '../../nucleo/almacen-demostracion';
+import { DOCUMENT } from '@angular/common';
+import { Component, DestroyRef, HostListener, computed, inject, signal } from '@angular/core';
+import { DomSanitizer } from '@angular/platform-browser';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PageHeader } from '../../compartidos/encabezado-pagina';
-@Component({ standalone: true, imports: [PageHeader], templateUrl: './reportes.html' })
+import {
+  ConsultasApi,
+  MedicosApi,
+  MedicoDto,
+  ReporteDto,
+} from '../../servicios/servicio-operaciones-api';
+import { mensajeError } from '../../nucleo/utilidades-api';
+import { POWER_BI_CONFIG } from '../../nucleo/configuracion-powerbi';
+
+// Solo se confía en enlaces de «Publicar en la web», nunca en URLs arbitrarias.
+export function validarUrlPublicaPowerBi(valor: string): string {
+  try {
+    const url = new URL(valor);
+    const claves = url.searchParams.getAll('r');
+    return url.protocol === 'https:' &&
+      url.hostname === 'app.powerbi.com' &&
+      !url.port &&
+      !url.username &&
+      !url.password &&
+      !url.hash &&
+      url.pathname === '/view' &&
+      claves.length === 1 &&
+      /^[A-Za-z0-9/_+-]+={0,2}$/.test(claves[0])
+      ? url.href
+      : '';
+  } catch {
+    return '';
+  }
+}
+
+type TipoReporte = 'citas' | 'servicios' | 'inventario' | 'powerbi';
+type EstadoVisualizacion = 'cargando' | 'documento-cargado' | 'demorado' | 'error';
+
+export function generarCsv(filas: (string | number)[][]): string {
+  return (
+    '\ufeff' +
+    filas
+      .map((fila) =>
+        fila
+          .map(
+            (valor) =>
+              '"' +
+              String(valor)
+                .replace(/^[\s]*[=+@-]/, "'$&")
+                .replaceAll('"', '""') +
+              '"',
+          )
+          .join(','),
+      )
+      .join('\r\n')
+  );
+}
+@Component({
+  standalone: true,
+  imports: [PageHeader],
+  templateUrl: './reportes.html',
+  styleUrl: './reportes.css',
+})
 export class Reports {
-  store = inject(DemoStore);
-  tab = signal('citas');
+  private api = inject(ConsultasApi);
+  private medicosApi = inject(MedicosApi);
+  private destroyRef = inject(DestroyRef);
+  private sanitizer = inject(DomSanitizer);
+  private document = inject(DOCUMENT);
+  private esperaPowerBi?: ReturnType<typeof setTimeout>;
+  private contenedorPantallaCompleta?: HTMLElement;
+  tab = signal<TipoReporte>('citas');
+  readonly reportesOperativos = [
+    { id: 'citas', nombre: 'Citas y atenciones' },
+    { id: 'servicios', nombre: 'Servicios hospitalarios' },
+    { id: 'inventario', nombre: 'Inventario' },
+  ] as const;
+  olapIniciado = signal(false);
+  estadoPowerBi = signal<EstadoVisualizacion>('cargando');
+  versionPowerBi = signal(0);
+  pantallaCompleta = signal(false);
+  errorPantallaCompleta = signal('');
   from = signal('');
   to = signal('');
-  doctor = signal(0);
+  doctor = signal('');
+  medicos = signal<MedicoDto[]>([]);
+  reporte = signal<ReporteDto | null>(null);
+  cargando = signal(false);
+  error = signal('');
   invalid = computed(() => !!this.from() && !!this.to() && this.from() > this.to());
-  inPeriod(date: string) {
-    return (
-      !this.invalid() && (!this.from() || date >= this.from()) && (!this.to() || date <= this.to())
+  filtrosCambiados = computed(
+    () => this.aplicados() !== JSON.stringify([this.from(), this.to(), this.doctor()]),
+  );
+  private aplicados = signal('');
+  bars = computed(() => {
+    const r = this.reporte();
+    return !r
+      ? []
+      : this.tab() === 'citas'
+        ? r.citas_por_medico
+        : this.tab() === 'servicios'
+          ? r.servicios
+          : r.consumos;
+  });
+  max = computed(() => Math.max(1, ...this.bars().map((r) => r.cantidad)));
+  readonly powerBiUrl = validarUrlPublicaPowerBi(POWER_BI_CONFIG.reportUrl);
+  // La validación debe preceder siempre a la excepción de confianza de Angular.
+  readonly powerBiSrc = this.powerBiUrl
+    ? this.sanitizer.bypassSecurityTrustResourceUrl(this.powerBiUrl)
+    : null;
+  constructor() {
+    this.destroyRef.onDestroy(() => this.cancelarEsperaPowerBi());
+    this.medicosApi
+      .listar()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (r) => this.medicos.set(r.data),
+        error: (e) => this.error.set(mensajeError(e)),
+      });
+    this.cargar();
+  }
+  seleccionarReporte(tipo: TipoReporte) {
+    this.tab.set(tipo);
+    if (tipo === 'powerbi' && !this.olapIniciado()) {
+      this.olapIniciado.set(true);
+      if (this.powerBiSrc) this.iniciarEsperaPowerBi();
+    }
+  }
+  recargarPowerBi() {
+    if (!this.powerBiSrc) return;
+    this.iniciarEsperaPowerBi();
+    // Recrear el iframe recarga la visualización sin cambiar la URL ni el modelo.
+    this.versionPowerBi.update((version) => version + 1);
+  }
+  documentoPowerBiCargado() {
+    this.cancelarEsperaPowerBi();
+    // El evento load no permite verificar los gráficos de un origen externo.
+    this.estadoPowerBi.set('documento-cargado');
+  }
+  falloPowerBi() {
+    this.cancelarEsperaPowerBi();
+    this.estadoPowerBi.set('error');
+  }
+  private iniciarEsperaPowerBi() {
+    this.cancelarEsperaPowerBi();
+    this.estadoPowerBi.set('cargando');
+    this.esperaPowerBi = setTimeout(() => this.estadoPowerBi.set('demorado'), 25000);
+  }
+  private cancelarEsperaPowerBi() {
+    clearTimeout(this.esperaPowerBi);
+    this.esperaPowerBi = undefined;
+  }
+  async alternarPantallaCompleta(contenedor: HTMLElement) {
+    this.errorPantallaCompleta.set('');
+    this.contenedorPantallaCompleta = contenedor;
+    try {
+      if (this.document.fullscreenElement === contenedor) {
+        await this.document.exitFullscreen();
+      } else if (contenedor.requestFullscreen) {
+        await contenedor.requestFullscreen();
+      } else {
+        this.errorPantallaCompleta.set(
+          'Este navegador no admite pantalla completa. Puedes abrir el informe en otra pestaña.',
+        );
+      }
+    } catch {
+      this.errorPantallaCompleta.set(
+        'No se pudo cambiar a pantalla completa. Puedes abrir el informe en otra pestaña.',
+      );
+    }
+  }
+  @HostListener('document:fullscreenchange')
+  actualizarPantallaCompleta() {
+    this.pantallaCompleta.set(
+      !!this.contenedorPantallaCompleta &&
+        this.document.fullscreenElement === this.contenedorPantallaCompleta,
     );
   }
-  appointments = computed(() =>
-    this.store
-      .data()
-      .citas.filter(
-        (a) => this.inPeriod(a.fecha) && (!this.doctor() || a.medicoId === this.doctor()),
-      ),
-  );
-  cares = computed(() =>
-    this.store
-      .data()
-      .atenciones.filter(
-        (c) =>
-          this.inPeriod(c.fecha) &&
-          (!this.doctor() ||
-            this.store.data().citas.find((a) => a.id === c.citaId)?.medicoId === this.doctor()),
-      ),
-  );
-  attended = computed(() => this.appointments().filter((x) => x.estado === 'ATENDIDA').length);
-  serviceCount = computed(() => this.cares().reduce((n, c) => n + c.servicios.length, 0));
-  movements = computed(() => this.store.data().movimientos.filter((m) => this.inPeriod(m.fecha)));
-  serviceRows = computed(() =>
-    this.store
-      .data()
-      .servicios.map((s) => ({
-        name: s.nombre,
-        count: this.cares().filter((c) => c.servicios.includes(s.id)).length,
-      }))
-      .sort((a, b) => b.count - a.count),
-  );
-  consumptionRows = computed(() =>
-    this.store
-      .data()
-      .insumos.map((s) => ({
-        name: s.nombre,
-        count: this.cares().reduce(
-          (sum, c) =>
-            sum + c.consumos.filter((x) => x.insumoId === s.id).reduce((n, x) => n + x.cantidad, 0),
-          0,
-        ),
-        unit: s.unidad,
-      }))
-      .sort((a, b) => b.count - a.count),
-  );
-  appointmentRows = computed(() =>
-    this.store.data().medicos.map((d) => ({
-      name: d.nombre,
-      count: this.appointments().filter((a) => a.medicoId === d.id).length,
-    })),
-  );
-  bars = computed(() =>
-    this.tab() === 'citas'
-      ? this.appointmentRows()
-      : this.tab() === 'servicios'
-        ? this.serviceRows()
-        : this.consumptionRows(),
-  );
-  max = computed(() => Math.max(1, ...this.bars().map((x) => x.count)));
-  consumedTypes = computed(() => this.consumptionRows().filter((x) => x.count > 0).length);
-  // Intencionalmente no se inventa un enlace Power BI. Se configurará tras publicar el informe sintético.
+  cargar() {
+    if (this.cargando() || this.invalid()) return;
+    const filtros = [this.from(), this.to(), this.doctor()];
+    this.cargando.set(true);
+    this.error.set('');
+    this.api
+      .reporte(...(filtros as [string, string, string]))
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (r) => {
+          this.reporte.set(r.data);
+          this.aplicados.set(JSON.stringify(filtros));
+          this.cargando.set(false);
+        },
+        error: (e) => {
+          this.reporte.set(null);
+          this.cargando.set(false);
+          this.error.set(mensajeError(e));
+        },
+      });
+  }
+  limpiar() {
+    this.from.set('');
+    this.to.set('');
+    this.doctor.set('');
+    this.cargar();
+  }
   export() {
-    let rows: (string | number)[][] = [];
-    if (this.tab() === 'citas')
-      rows = [['Médico', 'Citas'], ...this.appointmentRows().map((x) => [x.name, x.count])];
-    else if (this.tab() === 'servicios')
-      rows = [
-        ['Servicio', 'Atenciones con el servicio'],
-        ...this.serviceRows().map((x) => [x.name, x.count]),
-      ];
-    else
-      rows = [
-        ['Insumo', 'Consumo', 'Unidad'],
-        ...this.consumptionRows().map((x) => [x.name, x.count, x.unit]),
-      ];
-    const csv =
-      '\ufeff' +
-      rows
-        .map((row) =>
-          row
-            .map(
-              (x) =>
-                '"' +
-                String(x)
-                  .replace(/^[=+@-]/, "'$&")
-                  .replaceAll('"', '""') +
-                '"',
-            )
-            .join(','),
-        )
-        .join('\r\n');
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `medicore-${this.tab()}.csv`;
-    a.click();
+    if (
+      this.tab() === 'powerbi' ||
+      !this.reporte() ||
+      this.cargando() ||
+      this.filtrosCambiados() ||
+      this.invalid()
+    )
+      return;
+    const filas: (string | number)[][] = [
+      ['Referencia', 'Nombre', 'Cantidad', 'Unidad'],
+      ...this.bars().map((r) => [r.id, r.nombre, r.cantidad, r.unidad]),
+    ];
+    const url = URL.createObjectURL(
+      new Blob([generarCsv(filas)], { type: 'text/csv;charset=utf-8;' }),
+    );
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = `medicore-${this.tab()}.csv`;
+    enlace.click();
     URL.revokeObjectURL(url);
-    this.store.notify('Reporte CSV exportado.');
   }
 }

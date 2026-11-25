@@ -1,89 +1,95 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PageHeader } from '../../compartidos/encabezado-pagina';
+import { ConsultasApi, UsuarioDto } from '../../servicios/servicio-operaciones-api';
+import { mensajeError } from '../../nucleo/utilidades-api';
 @Component({
   standalone: true,
   imports: [PageHeader],
-  template: `<mc-page-header
+  template: ` <mc-page-header
       title="Usuarios y roles"
-      subtitle="Perfiles de demostración y distribución de permisos en MediCore."
+      subtitle="Directorio de cuentas y perfiles del sistema."
       section="ADMINISTRACIÓN / ACCESO"
-    />
-    <div class="mb-6 rounded-xl border border-sky-100 bg-sky-50 p-4 text-sm text-sky-800">
-      Los perfiles simulan permisos de navegación. La creación de cuentas, las contraseñas y la
-      autorización real se implementarán en el backend.
-    </div>
+    >
+      <button class="btn-secondary" [disabled]="cargando()" (click)="cargar()">Actualizar</button>
+    </mc-page-header>
+    @if (error()) {
+      <p class="error mb-4" role="alert">{{ error() }}</p>
+    }
     <section class="card">
       <div class="toolbar">
-        <h2 class="mr-auto">Perfiles del sistema</h2>
         <input
-          aria-label="Buscar perfiles"
-          placeholder="Buscar usuario o rol…"
+          aria-label="Buscar usuarios"
+          placeholder="Nombre, usuario o rol…"
           (input)="query.set($any($event.target).value)"
         />
       </div>
+      @if (cargando()) {
+        <p class="p-5" role="status">Cargando usuarios…</p>
+      }
       <div class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Usuario de demostración</th>
+              <th>Nombre</th>
+              <th>Usuario</th>
+              <th>Correo</th>
               <th>Rol</th>
-              <th>Permisos previstos</th>
               <th>Estado</th>
             </tr>
           </thead>
           <tbody>
-            @for (u of rows(); track u.role) {
+            @for (u of rows(); track u.id_usuario) {
               <tr>
-                <td class="font-semibold text-slate-800">{{ u.name }}</td>
-                <td>
-                  <span class="badge badge-blue">{{ u.role }}</span>
-                </td>
-                <td class="!whitespace-normal text-xs text-slate-500">{{ u.permissions }}</td>
-                <td><span class="badge badge-green">DEMO</span></td>
+                <td>{{ u.nombre_completo }}</td>
+                <td>{{ u.nombre_usuario }}</td>
+                <td>{{ u.correo }}</td>
+                <td>{{ u.rol }}</td>
+                <td>{{ u.activo ? 'Activo' : 'Inactivo' }}</td>
               </tr>
             } @empty {
               <tr>
-                <td colspan="4" class="empty">No se encontraron perfiles.</td>
+                <td colspan="5" class="empty">No se encontraron usuarios.</td>
               </tr>
             }
           </tbody>
         </table>
       </div>
-    </section>
-    <div class="mt-6 grid gap-4 sm:grid-cols-2">
-      @for (u of users; track u.role) {
-        <div class="card p-5">
-          <h2 class="text-sm">{{ u.role }}</h2>
-          <p class="mt-3 text-sm leading-relaxed text-slate-500">{{ u.permissions }}</p>
-        </div>
-      }
-    </div>`,
+    </section>`,
 })
 export class Users {
+  private api = inject(ConsultasApi);
+  private destroyRef = inject(DestroyRef);
+  usuarios = signal<UsuarioDto[]>([]);
   query = signal('');
-  users = [
-    {
-      name: 'Administrador MediCore',
-      role: 'ADMINISTRADOR',
-      permissions: 'Acceso general a los módulos, reportes y administración.',
-    },
-    {
-      name: 'Lucía Fernández',
-      role: 'ADMISION',
-      permissions: 'Registro de pacientes, programación de citas y consulta de agenda.',
-    },
-    {
-      name: 'Dra. Elena Morales',
-      role: 'MEDICO',
-      permissions: 'Consulta de su agenda, registro de atenciones, servicios y consumos.',
-    },
-    {
-      name: 'Marcos Díaz',
-      role: 'INVENTARIO',
-      permissions: 'Gestión de insumos, existencias y movimientos de inventario.',
-    },
-  ];
+  error = signal('');
+  cargando = signal(false);
   rows = computed(() =>
-    this.users.filter((u) => (u.name + u.role).toLowerCase().includes(this.query().toLowerCase())),
+    this.usuarios().filter((u) =>
+      `${u.nombre_completo} ${u.nombre_usuario} ${u.rol}`
+        .toLowerCase()
+        .includes(this.query().trim().toLowerCase()),
+    ),
   );
+  constructor() {
+    this.cargar();
+  }
+  cargar() {
+    if (this.cargando()) return;
+    this.cargando.set(true);
+    this.error.set('');
+    this.api
+      .usuarios()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (r) => {
+          this.usuarios.set(r.data);
+          this.cargando.set(false);
+        },
+        error: (e) => {
+          this.error.set(mensajeError(e));
+          this.cargando.set(false);
+        },
+      });
+  }
 }

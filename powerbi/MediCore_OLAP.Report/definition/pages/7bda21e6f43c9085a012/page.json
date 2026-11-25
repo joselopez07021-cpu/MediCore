@@ -1,0 +1,80 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "7bda21e6f43c9085a012",
+  "displayName": "Servicios hospitalarios",
+  "displayOption": "FitToPage",
+  "height": 1080,
+  "width": 1920,
+  "objects": {
+    "background": [
+      {
+        "properties": {
+          "color": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "Literal": {
+                    "Value": "'#F5F7FA'"
+                  }
+                }
+              }
+            }
+          },
+          "transparency": {
+            "expr": {
+              "Literal": {
+                "Value": "0D"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "outspace": [
+      {
+        "properties": {
+          "color": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "Literal": {
+                    "Value": "'#F5F7FA'"
+                  }
+                }
+              }
+            }
+          },
+          "transparency": {
+            "expr": {
+              "Literal": {
+                "Value": "0D"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "visualInteractions": [
+    {
+      "source": "52142ca57f00904e02e1",
+      "target": "356f1a212935828bc1a5",
+      "type": "NoFilter"
+    },
+    {
+      "source": "52142ca57f00904e02e1",
+      "target": "3f7d603c59bd6421795e",
+      "type": "NoFilter"
+    },
+    {
+      "source": "610e0040e65de210a839",
+      "target": "356f1a212935828bc1a5",
+      "type": "NoFilter"
+    },
+    {
+      "source": "610e0040e65de210a839",
+      "target": "3f7d603c59bd6421795e",
+      "type": "NoFilter"
+    }
+  ]
+}

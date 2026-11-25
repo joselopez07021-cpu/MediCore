@@ -1,51 +1,79 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { DemoStore } from '../../nucleo/almacen-demostracion';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { PageHeader } from '../../compartidos/encabezado-pagina';
+import { MedicosApi, MedicoDto } from '../../servicios/servicio-operaciones-api';
+import { mensajeError } from '../../nucleo/utilidades-api';
 @Component({
   standalone: true,
-  imports: [PageHeader, RouterLink],
-  template: `<mc-page-header
+  imports: [PageHeader],
+  template: ` <mc-page-header
       title="Directorio médico"
-      subtitle="Conoce al equipo médico y sus especialidades."
-      section="ADMISIÓN / EQUIPO MÉDICO"
+      subtitle="Profesionales registrados en el hospital."
+      section="ADMISIÓN / MÉDICOS"
+    >
+      <button class="btn-secondary" [disabled]="cargando()" (click)="cargar()">Actualizar</button>
+    </mc-page-header>
+    @if (error()) {
+      <p class="error mb-4" role="alert">{{ error() }}</p>
+    }
+    @if (cargando()) {
+      <p role="status">Cargando médicos…</p>
+    }
+    <input
+      class="mb-5"
+      aria-label="Buscar médicos"
+      placeholder="Nombre o especialidad…"
+      (input)="query.set($any($event.target).value)"
     />
-    <div class="mb-6 max-w-md">
-      <input
-        aria-label="Buscar médico"
-        placeholder="Buscar por nombre o especialidad…"
-        (input)="query.set($any($event.target).value)"
-      />
-    </div>
-    <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-      @for (d of rows(); track d.id) {
+    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      @for (m of rows(); track m.id_medico) {
         <article class="card p-6">
-          <div
-            class="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-sky-50 text-xl font-bold text-sky-700"
-          >
-            {{ d.nombre.split(' ')[1].slice(0, 1) }}{{ d.nombre.split(' ')[2].slice(0, 1) }}
-          </div>
-          <span class="badge badge-green">EQUIPO MÉDICO</span>
-          <h2 class="mt-4 text-base">{{ d.nombre }}</h2>
-          <p class="mt-1 text-sm text-slate-500">{{ d.especialidad }}</p>
-          <div class="mt-6 border-t border-slate-100 pt-4 text-xs text-slate-400">
-            Hospital Privado Boston Vida
-          </div>
-          <a routerLink="/admision/agenda" class="link mt-4 inline-block">Consultar agenda →</a>
+          <h2>{{ m.nombre_completo }}</h2>
+          <p class="mt-2 text-sm text-sky-700">{{ m.especialidad }}</p>
+          <p class="mt-3 text-sm">{{ m.telefono || 'Sin teléfono' }}</p>
+          <p class="text-sm">{{ m.correo || 'Sin correo' }}</p>
+          <span class="badge mt-4">{{ m.activo ? 'Activo' : 'Inactivo' }}</span>
         </article>
       } @empty {
-        <p class="empty">No se encontraron médicos.</p>
+        @if (!cargando()) {
+          <p class="empty">No se encontraron médicos.</p>
+        }
       }
-    </div>`,
+    </section>`,
 })
 export class Doctors {
-  store = inject(DemoStore);
+  private api = inject(MedicosApi);
+  private destroyRef = inject(DestroyRef);
+  medicos = signal<MedicoDto[]>([]);
   query = signal('');
+  error = signal('');
+  cargando = signal(false);
   rows = computed(() =>
-    this.store
-      .data()
-      .medicos.filter((x) =>
-        (x.nombre + ' ' + x.especialidad).toLowerCase().includes(this.query().toLowerCase()),
-      ),
+    this.medicos().filter((m) =>
+      `${m.nombre_completo} ${m.especialidad}`
+        .toLowerCase()
+        .includes(this.query().trim().toLowerCase()),
+    ),
   );
+  constructor() {
+    this.cargar();
+  }
+  cargar() {
+    if (this.cargando()) return;
+    this.cargando.set(true);
+    this.error.set('');
+    this.api
+      .listar()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (r) => {
+          this.medicos.set(r.data);
+          this.cargando.set(false);
+        },
+        error: (e) => {
+          this.error.set(mensajeError(e));
+          this.cargando.set(false);
+        },
+      });
+  }
 }

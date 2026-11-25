@@ -1,9 +1,6 @@
 // pacientes.service.js
 import prisma from "../config/prisma.js";
-import {
-    obtenerPaginacion,
-    construirPaginacion
-} from "./paginacion.utils.js";
+import { obtenerPaginacion, construirPaginacion } from "./paginacion.utils.js";
 
 export class PacienteError extends Error {
   constructor(message, status = 400) {
@@ -14,19 +11,17 @@ export class PacienteError extends Error {
 }
 
 const construirFiltroPacientes = (activo) => {
-    const where = {};
+  const where = {};
 
-    if (activo !== undefined) {
-        if (activo !== "true" && activo !== "false") {
-            throw new PacienteError(
-                "El parámetro activo debe ser true o false"
-            );
-        }
-
-        where.activo = activo === "true";
+  if (activo !== undefined) {
+    if (activo !== "true" && activo !== "false") {
+      throw new PacienteError("El parámetro activo debe ser true o false");
     }
 
-    return where;
+    where.activo = activo === "true";
+  }
+
+  return where;
 };
 
 const pacienteAJson = (paciente) => ({
@@ -34,21 +29,18 @@ const pacienteAJson = (paciente) => ({
   identificacion: paciente.identificacion,
   nombre: paciente.nombre,
   apellido: paciente.apellido,
-  fecha_nacimiento: paciente.fecha_nacimiento
-    ?.toISOString().slice(0, 10) ?? null,
+  fecha_nacimiento:
+    paciente.fecha_nacimiento?.toISOString().slice(0, 10) ?? null,
   telefono: paciente.telefono,
   correo: paciente.correo,
   direccion: paciente.direccion,
   fecha_registro: paciente.fecha_registro.toISOString(),
-  activo: paciente.activo
+  activo: paciente.activo,
 });
 
 const validarIdPaciente = (id) => {
   if (!/^[1-9]\d*$/.test(String(id))) {
-    throw new PacienteError(
-      "El identificador del paciente no es válido",
-      400
-    );
+    throw new PacienteError("El identificador del paciente no es válido", 400);
   }
 
   try {
@@ -60,13 +52,9 @@ const validarIdPaciente = (id) => {
 
     return idPaciente;
   } catch {
-    throw new PacienteError(
-      "El identificador del paciente no es válido",
-      400
-    );
+    throw new PacienteError("El identificador del paciente no es válido", 400);
   }
 };
-
 
 export const registrarPaciente = async (datos) => {
   const {
@@ -75,7 +63,7 @@ export const registrarPaciente = async (datos) => {
     identificacion,
     fecha_nacimiento,
     telefono,
-    correo
+    correo,
   } = datos;
 
   // Validar los seis campos obligatorios del formulario
@@ -85,14 +73,12 @@ export const registrarPaciente = async (datos) => {
     identificacion,
     fecha_nacimiento,
     telefono,
-    correo
+    correo,
   };
 
   for (const [campo, valor] of Object.entries(campos)) {
     if (typeof valor !== "string" || !valor.trim()) {
-      throw new PacienteError(
-        `El campo ${campo} es obligatorio`
-      );
+      throw new PacienteError(`El campo ${campo} es obligatorio`);
     }
   }
 
@@ -111,23 +97,17 @@ export const registrarPaciente = async (datos) => {
     telefonoLimpio.length > 30 ||
     correoLimpio.length > 254
   ) {
-    throw new PacienteError(
-      "Uno o más campos exceden la longitud permitida"
-    );
+    throw new PacienteError("Uno o más campos exceden la longitud permitida");
   }
 
   // Validar formato del correo
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoLimpio)) {
-    throw new PacienteError(
-      "El correo electrónico no tiene un formato válido"
-    );
+    throw new PacienteError("El correo electrónico no tiene un formato válido");
   }
 
   // Validar fecha YYYY-MM-DD
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha_nacimiento)) {
-    throw new PacienteError(
-      "La fecha debe tener formato YYYY-MM-DD"
-    );
+    throw new PacienteError("La fecha debe tener formato YYYY-MM-DD");
   }
 
   const fecha = new Date(`${fecha_nacimiento}T00:00:00.000Z`);
@@ -136,31 +116,27 @@ export const registrarPaciente = async (datos) => {
     Number.isNaN(fecha.getTime()) ||
     fecha.toISOString().slice(0, 10) !== fecha_nacimiento
   ) {
-    throw new PacienteError(
-      "La fecha de nacimiento no es válida"
-    );
+    throw new PacienteError("La fecha de nacimiento no es válida");
   }
 
   if (fecha > new Date()) {
-    throw new PacienteError(
-      "La fecha de nacimiento no puede ser futura"
-    );
+    throw new PacienteError("La fecha de nacimiento no puede ser futura");
   }
 
   // Comprobar identificación duplicada
   const existente = await prisma.pacientes.findUnique({
     where: {
-      identificacion: identificacionLimpia
+      identificacion: identificacionLimpia,
     },
     select: {
-      id_paciente: true
-    }
+      id_paciente: true,
+    },
   });
 
   if (existente) {
     throw new PacienteError(
       "Ya existe un paciente con esa identificación",
-      409
+      409,
     );
   }
 
@@ -172,251 +148,227 @@ export const registrarPaciente = async (datos) => {
       identificacion: identificacionLimpia,
       fecha_nacimiento: fecha,
       telefono: telefonoLimpio,
-      correo: correoLimpio
-    }
+      correo: correoLimpio,
+    },
   });
 
   return pacienteAJson(paciente);
 };
 
 export const listarPacientes = async (activo) => {
-    const where = construirFiltroPacientes(activo);
+  const where = construirFiltroPacientes(activo);
 
-    const pacientes = await prisma.pacientes.findMany({
-        where,
-        orderBy: {
-            id_paciente: "asc"
-        }
-    });
+  const pacientes = await prisma.pacientes.findMany({
+    where,
+    orderBy: {
+      id_paciente: "asc",
+    },
+  });
 
-    return pacientes.map(pacienteAJson);
+  return pacientes.map(pacienteAJson);
 };
 
-
 export const listarPacientesPaginados = async (filtros = {}) => {
-    const { pagina, limite, skip } = obtenerPaginacion(
-        filtros.page ?? "1",
-        10
-    );
+  const { pagina, limite, skip } = obtenerPaginacion(filtros.page ?? "1", 10);
 
-    const where = construirFiltroPacientes(
-        filtros.activo
-    );
+  const where = construirFiltroPacientes(filtros.activo);
 
-    const [total, pacientes] = await Promise.all([
-        prisma.pacientes.count({
-            where
-        }),
+  const [total, pacientes] = await Promise.all([
+    prisma.pacientes.count({
+      where,
+    }),
 
-        prisma.pacientes.findMany({
-            where,
-            orderBy: {
-                id_paciente: "asc"
-            },
-            skip,
-            take: limite
-        })
-    ]);
+    prisma.pacientes.findMany({
+      where,
+      orderBy: {
+        id_paciente: "asc",
+      },
+      skip,
+      take: limite,
+    }),
+  ]);
 
-    return {
-        data: pacientes.map(pacienteAJson),
-        paginacion: construirPaginacion(
-            pagina,
-            limite,
-            total
-        )
-    };
+  return {
+    data: pacientes.map(pacienteAJson),
+    paginacion: construirPaginacion(pagina, limite, total),
+  };
 };
 
 export const obtenerPaciente = async (id) => {
-    const idPaciente = validarIdPaciente(id);
+  const idPaciente = validarIdPaciente(id);
 
-    const paciente = await prisma.pacientes.findUnique({
-        where: {
-            id_paciente: idPaciente
-        }
-    });
+  const paciente = await prisma.pacientes.findUnique({
+    where: {
+      id_paciente: idPaciente,
+    },
+  });
 
-    if (!paciente) {
-        throw new PacienteError(
-            "Paciente no encontrado",
-            404
-        );
-    }
+  if (!paciente) {
+    throw new PacienteError("Paciente no encontrado", 404);
+  }
 
-    return pacienteAJson(paciente);
+  return pacienteAJson(paciente);
 };
-
-
 
 export const actualizarPaciente = async (id, datos) => {
-    const idPaciente = validarIdPaciente(id);
+  const idPaciente = validarIdPaciente(id);
 
-    const {
-        nombre,
-        apellido,
-        identificacion,
-        fecha_nacimiento,
-        telefono,
-        correo
-    } = datos;
+  const {
+    nombre,
+    apellido,
+    identificacion,
+    fecha_nacimiento,
+    telefono,
+    correo,
+  } = datos;
 
-    const campos = {
-        nombre,
-        apellido,
-        identificacion,
-        fecha_nacimiento,
-        telefono,
-        correo
-    };
+  const campos = {
+    nombre,
+    apellido,
+    identificacion,
+    fecha_nacimiento,
+    telefono,
+    correo,
+  };
 
-    for (const [campo, valor] of Object.entries(campos)) {
-        if (typeof valor !== "string" || !valor.trim()) {
-            throw new PacienteError(
-                `El campo ${campo} es obligatorio`
-            );
-        }
+  for (const [campo, valor] of Object.entries(campos)) {
+    if (typeof valor !== "string" || !valor.trim()) {
+      throw new PacienteError(`El campo ${campo} es obligatorio`);
     }
+  }
 
-    const nombreLimpio = nombre.trim();
-    const apellidoLimpio = apellido.trim();
-    const identificacionLimpia = identificacion.trim();
-    const telefonoLimpio = telefono.trim();
-    const correoLimpio = correo.trim();
+  const nombreLimpio = nombre.trim();
+  const apellidoLimpio = apellido.trim();
+  const identificacionLimpia = identificacion.trim();
+  const telefonoLimpio = telefono.trim();
+  const correoLimpio = correo.trim();
 
-    if (
-        nombreLimpio.length > 80 ||
-        apellidoLimpio.length > 100 ||
-        identificacionLimpia.length > 40 ||
-        telefonoLimpio.length > 30 ||
-        correoLimpio.length > 254
-    ) {
-        throw new PacienteError(
-            "Uno o más campos exceden la longitud permitida"
-        );
-    }
+  if (
+    nombreLimpio.length > 80 ||
+    apellidoLimpio.length > 100 ||
+    identificacionLimpia.length > 40 ||
+    telefonoLimpio.length > 30 ||
+    correoLimpio.length > 254
+  ) {
+    throw new PacienteError("Uno o más campos exceden la longitud permitida");
+  }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoLimpio)) {
-        throw new PacienteError(
-            "El correo electrónico no tiene un formato válido"
-        );
-    }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoLimpio)) {
+    throw new PacienteError("El correo electrónico no tiene un formato válido");
+  }
 
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha_nacimiento)) {
-        throw new PacienteError(
-            "La fecha debe tener formato YYYY-MM-DD"
-        );
-    }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha_nacimiento)) {
+    throw new PacienteError("La fecha debe tener formato YYYY-MM-DD");
+  }
 
-    const fecha = new Date(`${fecha_nacimiento}T00:00:00.000Z`);
+  const fecha = new Date(`${fecha_nacimiento}T00:00:00.000Z`);
 
-    if (
-        Number.isNaN(fecha.getTime()) ||
-        fecha.toISOString().slice(0, 10) !== fecha_nacimiento ||
-        fecha > new Date()
-    ) {
-        throw new PacienteError(
-            "Fecha de nacimiento inválida"
-        );
-    }
+  if (
+    Number.isNaN(fecha.getTime()) ||
+    fecha.toISOString().slice(0, 10) !== fecha_nacimiento ||
+    fecha > new Date()
+  ) {
+    throw new PacienteError("Fecha de nacimiento inválida");
+  }
 
-    const pacienteActual = await prisma.pacientes.findUnique({
-        where: {
-            id_paciente: idPaciente
-        }
-    });
+  const pacienteActual = await prisma.pacientes.findUnique({
+    where: {
+      id_paciente: idPaciente,
+    },
+  });
 
-    if (!pacienteActual) {
-        throw new PacienteError(
-            "Paciente no encontrado",
-            404
-        );
-    }
+  if (!pacienteActual) {
+    throw new PacienteError("Paciente no encontrado", 404);
+  }
 
-    const paciente = await prisma.pacientes.update({
-        where: {
-            id_paciente: idPaciente
-        },
-        data: {
-            nombre: nombreLimpio,
-            apellido: apellidoLimpio,
-            identificacion: identificacionLimpia,
-            fecha_nacimiento: fecha,
-            telefono: telefonoLimpio,
-            correo: correoLimpio
-        }
-    });
+  const paciente = await prisma.pacientes.update({
+    where: {
+      id_paciente: idPaciente,
+    },
+    data: {
+      nombre: nombreLimpio,
+      apellido: apellidoLimpio,
+      identificacion: identificacionLimpia,
+      fecha_nacimiento: fecha,
+      telefono: telefonoLimpio,
+      correo: correoLimpio,
+    },
+  });
 
-    return pacienteAJson(paciente);
+  return pacienteAJson(paciente);
 };
-
 
 export const eliminarPaciente = async (id) => {
-    const idPaciente = validarIdPaciente(id);
+  const idPaciente = validarIdPaciente(id);
 
-    const paciente = await prisma.pacientes.findUnique({
-        where: {
-            id_paciente: idPaciente
-        }
-    });
+  const paciente = await prisma.pacientes.findUnique({
+    where: {
+      id_paciente: idPaciente,
+    },
+  });
 
-    if (!paciente) {
-        throw new PacienteError(
-            "Paciente no encontrado",
-            404
-        );
-    }
+  if (!paciente) {
+    throw new PacienteError("Paciente no encontrado", 404);
+  }
 
-    if (!paciente.activo) {
-        throw new PacienteError(
-            "El paciente ya se encuentra inactivo",
-            409
-        );
-    }
+  if (!paciente.activo) {
+    throw new PacienteError("El paciente ya se encuentra inactivo", 409);
+  }
 
-    const actualizado = await prisma.pacientes.update({
-        where: {
-            id_paciente: idPaciente
-        },
-        data: {
-            activo: false
-        }
-    });
+  const actualizado = await prisma.pacientes.update({
+    where: {
+      id_paciente: idPaciente,
+    },
+    data: {
+      activo: false,
+    },
+  });
 
-    return pacienteAJson(actualizado);
+  return pacienteAJson(actualizado);
 };
 
-
 export const cambiarEstadoPaciente = async (id, activo) => {
-    const idPaciente = validarIdPaciente(id);
+  const idPaciente = validarIdPaciente(id);
 
-    if (typeof activo !== "boolean") {
-        throw new PacienteError(
-            "El campo activo debe ser true o false"
-        );
-    }
+  if (typeof activo !== "boolean") {
+    throw new PacienteError("El campo activo debe ser true o false");
+  }
 
-    const paciente = await prisma.pacientes.findUnique({
-        where: {
-            id_paciente: idPaciente
-        }
-    });
+  const paciente = await prisma.pacientes.findUnique({
+    where: {
+      id_paciente: idPaciente,
+    },
+  });
 
-    if (!paciente) {
-        throw new PacienteError(
-            "Paciente no encontrado",
-            404
-        );
-    }
+  if (!paciente) {
+    throw new PacienteError("Paciente no encontrado", 404);
+  }
 
-    const actualizado = await prisma.pacientes.update({
-        where: {
-            id_paciente: idPaciente
-        },
-        data: {
-            activo
-        }
-    });
+  const actualizado = await prisma.pacientes.update({
+    where: {
+      id_paciente: idPaciente,
+    },
+    data: {
+      activo,
+    },
+  });
 
-    return pacienteAJson(actualizado);
+  return pacienteAJson(actualizado);
+};
+
+export const historialPaciente = async (id) => {
+  const idPaciente = validarIdPaciente(id);
+  await obtenerPaciente(id);
+  const citas = await prisma.citas.findMany({
+    where: { id_paciente: idPaciente },
+    include: { medicos: { select: { nombre: true, apellido: true } } },
+    orderBy: { fecha_hora_inicio: "desc" },
+  });
+  return citas.map((c) => ({
+    id_cita: String(c.id_cita),
+    fecha_hora_inicio: c.fecha_hora_inicio.toISOString(),
+    motivo: c.motivo,
+    estado: c.estado,
+    medico: `${c.medicos.nombre} ${c.medicos.apellido}`,
+  }));
 };

@@ -1,0 +1,89 @@
+table fact_citas
+	lineageTag: 554bb19e-c18b-4b3d-b2e6-4a2002fa2081
+
+	measure 'Total citas' = COUNTROWS(fact_citas)
+		formatString: 0
+		lineageTag: 10b1e425-f9e8-43c5-976a-bd60ceba428b
+
+	measure 'Citas atendidas' =
+			CALCULATE(
+			    [Total citas],
+			    fact_citas[estado] = "ATENDIDA"
+			)
+		formatString: 0
+		lineageTag: f589362a-54ab-4ac0-92e7-861633fe3917
+
+	measure 'Porcentaje atendido' =
+			DIVIDE(
+			    [Citas atendidas],
+			    [Total citas],
+			    0
+			)
+		formatString: 0.00\ %;-0.00\ %;0.00\ %
+		lineageTag: 4c885b09-fcb1-4fd7-8554-556878bc2783
+
+		changedProperty = IsHidden
+
+	measure 'Duracion promedio citas' = AVERAGE(fact_citas[duracion_minutos])
+		lineageTag: 1309fa78-e9dc-40ec-b505-7767657dbb5d
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column id_cita
+		dataType: string
+		lineageTag: c337a975-2a28-4b96-aefc-4d358579b118
+		summarizeBy: none
+		sourceColumn: id_cita
+
+		annotation SummarizationSetBy = Automatic
+
+	column id_medico
+		dataType: string
+		lineageTag: ccbdd800-30c4-438d-95c4-c6aab3983e85
+		summarizeBy: none
+		sourceColumn: id_medico
+
+		annotation SummarizationSetBy = Automatic
+
+	column fecha
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: b0fae186-1d05-4176-b5f0-0d99024838aa
+		summarizeBy: none
+		sourceColumn: fecha
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column estado
+		dataType: string
+		lineageTag: 2cf72c5c-cb0f-42e9-bf75-0ea1946003aa
+		summarizeBy: none
+		sourceColumn: estado
+
+		annotation SummarizationSetBy = Automatic
+
+	column duracion_minutos
+		dataType: double
+		lineageTag: 9a9e43b1-70f0-43c9-a276-68269037cfad
+		summarizeBy: sum
+		sourceColumn: duracion_minutos
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition fact_citas = m
+		mode: import
+		source =
+				let
+				    Origen = PostgreSQL.Database("localhost:5433", "medicore"),
+				    analitica_fact_citas = Origen{[Schema="analitica",Item="fact_citas"]}[Data]
+				in
+				    analitica_fact_citas
+
+	annotation PBI_NavigationStepName = Navegación
+
+	annotation PBI_ResultType = Table
+

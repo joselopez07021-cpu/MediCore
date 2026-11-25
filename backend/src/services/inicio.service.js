@@ -29,7 +29,12 @@ function rangoDiaCostaRica(fecha) {
   };
 }
 
-export async function obtenerResumenInicio() {
+export async function obtenerResumenInicio(usuario) {
+  const rol = usuario.roles.nombre;
+  const medico = rol === "MEDICO" ? usuario.medicos?.id_medico : undefined;
+  const puedeAgenda = ["ADMINISTRADOR", "ADMISION", "MEDICO"].includes(rol);
+  const puedeInventario = ["ADMINISTRADOR", "INVENTARIO"].includes(rol);
+  const filtroMedico = medico ? { id_medico: medico } : {};
   const fecha = fechaActualCostaRica();
   const rangoHoy = rangoDiaCostaRica(fecha);
 
@@ -49,71 +54,91 @@ export async function obtenerResumenInicio() {
     citasAgenda,
     insumosReposicion,
   ] = await Promise.all([
-    prisma.pacientes.count(),
+    rol === "MEDICO"
+      ? prisma.pacientes.count({ where: { citas: { some: filtroMedico } } })
+      : rol === "INVENTARIO"
+        ? 0
+        : prisma.pacientes.count(),
 
-    prisma.citas.count({
-      where: {
-        fecha_hora_inicio: rangoHoy,
-      },
-    }),
-
-    prisma.atenciones.count(),
-
-    prisma.insumos.count({
-      where: filtroReposicion,
-    }),
-
-    obtenerResumenCitas(),
-
-    prisma.citas.findMany({
-      where: {
-        fecha_hora_inicio: rangoHoy,
-      },
-      select: {
-        id_cita: true,
-        fecha_hora_inicio: true,
-        fecha_hora_fin: true,
-        motivo: true,
-        estado: true,
-
-        pacientes: {
-          select: {
-            id_paciente: true,
-            nombre: true,
-            apellido: true,
+    puedeAgenda
+      ? prisma.citas.count({
+          where: {
+            fecha_hora_inicio: rangoHoy,
+            ...filtroMedico,
           },
-        },
+        })
+      : 0,
 
-        medicos: {
-          select: {
-            id_medico: true,
-            nombre: true,
-            apellido: true,
-            especialidad: true,
+    rol === "INVENTARIO"
+      ? 0
+      : prisma.atenciones.count({
+          where: medico ? { citas: filtroMedico } : {},
+        }),
+
+    puedeInventario
+      ? prisma.insumos.count({
+          where: filtroReposicion,
+        })
+      : 0,
+
+    puedeAgenda
+      ? obtenerResumenCitas(medico ? { id_medico: String(medico) } : {})
+      : { por_estado: {} },
+
+    puedeAgenda
+      ? prisma.citas.findMany({
+          where: {
+            fecha_hora_inicio: rangoHoy,
+            ...filtroMedico,
           },
-        },
-      },
-      orderBy: {
-        fecha_hora_inicio: "asc",
-      },
-      take: 10,
-    }),
+          select: {
+            id_cita: true,
+            fecha_hora_inicio: true,
+            fecha_hora_fin: true,
+            motivo: true,
+            estado: true,
 
-    prisma.insumos.findMany({
-      where: filtroReposicion,
-      select: {
-        id_insumo: true,
-        codigo: true,
-        nombre: true,
-        unidad_medida: true,
-        stock_actual: true,
-        stock_minimo: true,
-      },
-      orderBy: {
-        stock_actual: "asc",
-      },
-      take: 5,
-    }),
+            pacientes: {
+              select: {
+                id_paciente: true,
+                nombre: true,
+                apellido: true,
+              },
+            },
+
+            medicos: {
+              select: {
+                id_medico: true,
+                nombre: true,
+                apellido: true,
+                especialidad: true,
+              },
+            },
+          },
+          orderBy: {
+            fecha_hora_inicio: "asc",
+          },
+          take: 10,
+        })
+      : [],
+
+    puedeInventario
+      ? prisma.insumos.findMany({
+          where: filtroReposicion,
+          select: {
+            id_insumo: true,
+            codigo: true,
+            nombre: true,
+            unidad_medida: true,
+            stock_actual: true,
+            stock_minimo: true,
+          },
+          orderBy: {
+            stock_actual: "asc",
+          },
+          take: 5,
+        })
+      : [],
   ]);
 
   return {

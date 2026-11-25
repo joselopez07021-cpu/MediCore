@@ -1,0 +1,105 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "e9346ab50c1287df0291",
+  "displayName": "Inventario e insumos",
+  "displayOption": "FitToPage",
+  "height": 1080,
+  "width": 1920,
+  "objects": {
+    "background": [
+      {
+        "properties": {
+          "color": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "Literal": {
+                    "Value": "'#F5F7FA'"
+                  }
+                }
+              }
+            }
+          },
+          "transparency": {
+            "expr": {
+              "Literal": {
+                "Value": "0D"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "outspace": [
+      {
+        "properties": {
+          "color": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "Literal": {
+                    "Value": "'#F5F7FA'"
+                  }
+                }
+              }
+            }
+          },
+          "transparency": {
+            "expr": {
+              "Literal": {
+                "Value": "0D"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "visualInteractions": [
+    {
+      "source": "e7a31ded4c82e2a9882f",
+      "target": "036f4ce39de0a7adf644",
+      "type": "NoFilter"
+    },
+    {
+      "source": "e7a31ded4c82e2a9882f",
+      "target": "e8715f3e84bde8bbe45b",
+      "type": "NoFilter"
+    },
+    {
+      "source": "e7a31ded4c82e2a9882f",
+      "target": "99a0b3a3297138ab8d56",
+      "type": "NoFilter"
+    },
+    {
+      "source": "7c5d9897bf271018b010",
+      "target": "036f4ce39de0a7adf644",
+      "type": "NoFilter"
+    },
+    {
+      "source": "7c5d9897bf271018b010",
+      "target": "e8715f3e84bde8bbe45b",
+      "type": "NoFilter"
+    },
+    {
+      "source": "7c5d9897bf271018b010",
+      "target": "99a0b3a3297138ab8d56",
+      "type": "NoFilter"
+    },
+    {
+      "source": "593e4ff6e1a372b8c557",
+      "target": "036f4ce39de0a7adf644",
+      "type": "NoFilter"
+    },
+    {
+      "source": "593e4ff6e1a372b8c557",
+      "target": "e8715f3e84bde8bbe45b",
+      "type": "NoFilter"
+    },
+    {
+      "source": "593e4ff6e1a372b8c557",
+      "target": "99a0b3a3297138ab8d56",
+      "type": "NoFilter"
+    }
+  ]
+}

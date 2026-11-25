@@ -1,7 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Auth } from '../nucleo/autenticacion';
-import { DemoStore } from '../nucleo/almacen-demostracion';
 @Component({
   selector: 'mc-shell',
   standalone: true,
@@ -10,7 +9,6 @@ import { DemoStore } from '../nucleo/almacen-demostracion';
 })
 export class Shell {
   auth = inject(Auth);
-  store = inject(DemoStore);
   router = inject(Router);
   menu = signal(false);
   closeMenus(event: Event) {

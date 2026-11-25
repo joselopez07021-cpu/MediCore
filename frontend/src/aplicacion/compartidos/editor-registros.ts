@@ -8,13 +8,14 @@ export interface EditorField {
   required?: boolean;
   min?: number;
   max?: string;
+  maxLength?: number;
   options?: { value: string | number; label: string }[];
 }
 @Component({
   selector: 'mc-editor',
   standalone: true,
   imports: [ReactiveFormsModule, DialogFocus],
-  template: `<div class="modal-backdrop" (click)="cancel.emit()">
+  template: `<div class="modal-backdrop" (click)="close()">
     <section
       class="modal"
       mcDialog
@@ -22,7 +23,7 @@ export interface EditorField {
       aria-modal="true"
       aria-labelledby="editor-title"
       (click)="$event.stopPropagation()"
-      (keydown.escape)="cancel.emit()"
+      (keydown.escape)="close()"
     >
       <div class="mb-6 flex items-center justify-between">
         <h2 id="editor-title">{{ title() }}</h2>
@@ -30,13 +31,14 @@ export interface EditorField {
           type="button"
           class="btn-secondary !p-2"
           aria-label="Cerrar formulario"
-          (click)="cancel.emit()"
+          [disabled]="busy()"
+          (click)="close()"
         >
           ✕
         </button>
       </div>
       <form [formGroup]="form" (ngSubmit)="submit()">
-        <div class="grid gap-4 sm:grid-cols-2">
+        <fieldset [disabled]="busy()" class="grid gap-4 sm:grid-cols-2">
           @for (f of fields(); track f.key) {
             <label class="field" [class.sm:col-span-2]="f.type === 'textarea'"
               >{{ f.label }}{{ f.required ? ' *' : '' }}
@@ -50,7 +52,10 @@ export interface EditorField {
                   </select>
                 }
                 @case ('textarea') {
-                  <textarea [formControlName]="f.key" maxlength="2000"></textarea>
+                  <textarea
+                    [formControlName]="f.key"
+                    [attr.maxlength]="f.maxLength ?? 2000"
+                  ></textarea>
                 }
                 @default {
                   <input
@@ -59,7 +64,7 @@ export interface EditorField {
                     [attr.min]="f.min ?? null"
                     [attr.max]="f.max ?? null"
                     [attr.step]="f.type === 'number' ? 1 : null"
-                    [attr.maxlength]="f.type === 'text' ? 200 : null"
+                    [attr.maxlength]="f.maxLength ?? (f.type === 'text' || !f.type ? 200 : null)"
                   />
                 }
               }
@@ -74,14 +79,17 @@ export interface EditorField {
               }
             </label>
           }
-        </div>
+        </fieldset>
         <p class="mt-4 text-xs text-slate-400">* Campos obligatorios</p>
         @if (error()) {
           <p class="error mt-4" role="alert">{{ error() }}</p>
         }
         <div class="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-5">
-          <button type="button" class="btn-secondary" (click)="cancel.emit()">Cancelar</button
-          ><button type="submit" class="btn-primary">Guardar {{ saveLabel() }}</button>
+          <button type="button" class="btn-secondary" [disabled]="busy()" (click)="close()">
+            Cancelar</button
+          ><button type="submit" class="btn-primary" [disabled]="busy()">
+            {{ busy() ? 'Guardando…' : 'Guardar ' + saveLabel() }}
+          </button>
         </div>
       </form>
     </section>
@@ -93,6 +101,7 @@ export class RecordEditor {
   fields = input.required<EditorField[]>();
   values = input<Record<string, unknown>>({});
   error = input('');
+  busy = input(false);
   save = output<Record<string, any>>();
   cancel = output<void>();
   form = new FormGroup<Record<string, FormControl>>({});
@@ -104,6 +113,7 @@ export class RecordEditor {
         const rules = [];
         if (f.required) rules.push(Validators.required, Validators.pattern(/[\s\S]*\S[\s\S]*/));
         if (f.type === 'email') rules.push(Validators.email);
+        if (f.maxLength) rules.push(Validators.maxLength(f.maxLength));
         if (f.type === 'number') {
           rules.push(Validators.pattern(/^\d+$/));
           if (f.min !== undefined) rules.push(Validators.min(f.min));
@@ -114,6 +124,7 @@ export class RecordEditor {
     });
   }
   submit() {
+    if (this.busy()) return;
     this.form.markAllAsTouched();
     if (this.form.valid) {
       const result = this.form.getRawValue();
@@ -122,5 +133,8 @@ export class RecordEditor {
       }
       this.save.emit(result);
     }
+  }
+  close() {
+    if (!this.busy()) this.cancel.emit();
   }
 }

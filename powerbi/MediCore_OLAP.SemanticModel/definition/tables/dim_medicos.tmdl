@@ -1,0 +1,49 @@
+table dim_medicos
+	lineageTag: e2ec3d64-d8cc-4c9d-a9d1-846546a26b1f
+
+	column id_medico
+		dataType: string
+		lineageTag: 23a1fab4-9afb-4d48-a26c-0ade733fcbff
+		summarizeBy: none
+		sourceColumn: id_medico
+
+		annotation SummarizationSetBy = Automatic
+
+	column medico
+		dataType: string
+		lineageTag: 88e4f984-34a7-4b83-9bbf-43d616c1a3ce
+		summarizeBy: none
+		sourceColumn: medico
+
+		annotation SummarizationSetBy = Automatic
+
+	column especialidad
+		dataType: string
+		lineageTag: cb7b82d8-8e40-4f1c-9b14-8f4384fb9c9c
+		summarizeBy: none
+		sourceColumn: especialidad
+
+		annotation SummarizationSetBy = Automatic
+
+	column activo
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 2c2f50b1-b69b-4202-b1f7-8b0edc7d7d40
+		summarizeBy: none
+		sourceColumn: activo
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_medicos = m
+		mode: import
+		source =
+				let
+				    Origen = PostgreSQL.Database("localhost:5433", "medicore"),
+				    analitica_dim_medicos = Origen{[Schema="analitica",Item="dim_medicos"]}[Data]
+				in
+				    analitica_dim_medicos
+
+	annotation PBI_NavigationStepName = Navegación
+
+	annotation PBI_ResultType = Table
+

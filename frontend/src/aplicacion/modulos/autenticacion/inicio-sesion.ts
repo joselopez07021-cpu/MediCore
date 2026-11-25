@@ -1,9 +1,8 @@
 import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Auth, DEMO_ACCOUNTS, DEMO_PASSWORD } from '../../nucleo/autenticacion';
-import { Role } from '../../nucleo/modelos';
-import { DemoStore } from '../../nucleo/almacen-demostracion';
+import { Auth } from '../../nucleo/autenticacion';
+import { AutenticacionApi } from '../../servicios/servicio-autenticacion-api';
 @Component({
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink],
@@ -41,34 +40,10 @@ import { DemoStore } from '../../nucleo/almacen-demostracion';
           {{
             destination
               ? 'Inicia sesión para acceder a ' + destinationName + '.'
-              : 'Selecciona un perfil e inicia sesión con las credenciales de prueba.'
+              : 'Ingresa con tu usuario y contraseña.'
           }}
         </p>
         <form [formGroup]="form" (ngSubmit)="enter()" class="space-y-5">
-          <div class="grid gap-5 sm:grid-cols-2">
-            <label class="field" [class.sm:col-span-2]="form.controls.role.value !== 'MEDICO'"
-              >Perfil de acceso<select formControlName="role">
-                <option value="ADMINISTRADOR">Administrador · acceso general</option>
-                <option value="ADMISION">Admisión · pacientes y citas</option>
-                <option value="MEDICO">Médico</option>
-                <option value="INVENTARIO">Inventario · insumos y movimientos</option>
-              </select></label
-            >
-            @if (form.controls.role.value === 'MEDICO') {
-              <label class="field"
-                >Médico que ingresa
-                <select formControlName="medicoId" required>
-                  <option value="">Seleccionar médico…</option>
-                  @for (m of store.data().medicos; track m.id) {
-                    <option [value]="m.id">{{ m.nombre }} · {{ m.especialidad }}</option>
-                  }
-                </select>
-                @if (form.controls.medicoId.touched && !selectedDoctor()) {
-                  <span class="text-xs text-rose-600">Selecciona un médico registrado.</span>
-                }
-              </label>
-            }
-          </div>
           <label class="field"
             >Usuario
             <input
@@ -95,23 +70,23 @@ import { DemoStore } from '../../nucleo/almacen-demostracion';
           @if (error()) {
             <p class="error" role="alert">{{ error() }}</p>
           }
-          <div class="rounded-xl border border-teal-100 bg-teal-50 p-4 text-sm text-teal-900">
-            <p class="font-semibold">Credenciales de muestra</p>
-            <p class="mt-1">
-              Usuario: <strong>{{ demoUsername }}</strong> · Contraseña:
-              <strong>{{ demoPassword }}</strong>
-            </p>
-          </div>
-          <button class="btn-primary w-full justify-center py-3" type="submit">
-            Iniciar sesión →
-          </button>
-          @if (auth.role()) {
+            @if (mensaje()) {
+            <p class="text-sm text-teal-700" role="status">
+            {{ mensaje() }}
+           </p>
+        }
+          <button
+  class="btn-primary w-full justify-center py-3"
+  type="submit"
+  [disabled]="enviando()"
+>
+{{ enviando() ? 'Ingresando…' : 'Iniciar sesión' }}</button>
+          @if (auth.usuario()) {
             <a routerLink="/inicio" class="btn-secondary w-full">Cancelar y volver al inicio</a>
           }
         </form>
         <p class="mt-6 rounded-xl bg-slate-50 p-4 text-xs leading-relaxed text-slate-500">
-          Este acceso simula los roles del ERP. Los datos son ficticios y se guardan en este
-          navegador. La autenticación real se integrará con el backend.
+          El acceso se valida con el servidor. Los registros de este entorno son ficticios.
         </p>
       </div>
     </section>
@@ -119,14 +94,13 @@ import { DemoStore } from '../../nucleo/almacen-demostracion';
 })
 export class Login {
   auth = inject(Auth);
-  store = inject(DemoStore);
   router = inject(Router);
   route = inject(ActivatedRoute);
   error = signal('');
-  demoPassword = DEMO_PASSWORD;
+  private autenticacionApi = inject(AutenticacionApi);
+  enviando = signal(false);
+  mensaje = signal('');
   form = inject(FormBuilder).nonNullable.group({
-    role: ['ADMINISTRADOR', Validators.required],
-    medicoId: [''],
     username: ['', Validators.required],
     password: ['', Validators.required],
   });
@@ -143,39 +117,47 @@ export class Login {
     const title = this.destination?.route.title;
     return typeof title === 'string' ? title.split(' · ')[0] : 'la sección';
   }
-  get demoUsername() {
-    return DEMO_ACCOUNTS[this.form.controls.role.value as Role];
-  }
-  selectedDoctor() {
-    return this.store
-      .data()
-      .medicos.find((m) => m.id === Number(this.form.controls.medicoId.value));
-  }
   enter() {
+    if (this.enviando()) return;
+
     this.error.set('');
+    this.mensaje.set('');
     this.form.markAllAsTouched();
+
     if (this.form.invalid) return;
-    const role = this.form.controls.role.value as Role;
-    if (role === 'MEDICO' && !this.selectedDoctor()) return;
-    if (
-      !this.auth.verifyCredentials(
-        role,
-        this.form.controls.username.value,
-        this.form.controls.password.value,
-      )
-    ) {
-      this.error.set(
-        'Usuario o contraseña incorrectos. Utiliza las credenciales de muestra indicadas.',
-      );
-      return;
-    }
-    this.auth.login(role, this.selectedDoctor()?.id);
-    const destination = this.destination;
-    if (
-      destination &&
-      (!destination.route.data?.['roles'] || this.auth.can(destination.route.data['roles']))
-    ) {
-      void this.router.navigateByUrl(destination.url);
-    } else void this.router.navigateByUrl('/inicio');
+
+    this.enviando.set(true);
+
+    this.autenticacionApi.iniciarSesion(
+      this.form.controls.username.value.trim(),
+      this.form.controls.password.value,
+    ).subscribe({
+      next: (respuesta) => {
+        this.auth.guardarSesion(respuesta.data);
+        this.enviando.set(false);
+
+        const destination = this.destination;
+
+        if (
+          destination &&
+          this.auth.can(destination.route.data?.['roles'] || [])
+        ) {
+          void this.router.navigateByUrl(destination.url);
+        } else {
+          void this.router.navigateByUrl('/inicio');
+        }
+      },
+      error: (fallo) => {
+        this.enviando.set(false);
+
+        if (fallo.status === 401) {
+          this.error.set('Credenciales inválidas o cuenta deshabilitada.');
+        } else if (fallo.status === 0) {
+          this.error.set('No se pudo contactar con el backend.');
+        } else {
+          this.error.set('No se pudo completar la verificación.');
+        }
+      },
+    });
   }
 }

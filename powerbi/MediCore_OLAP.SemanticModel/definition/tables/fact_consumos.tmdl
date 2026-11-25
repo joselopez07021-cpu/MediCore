@@ -1,0 +1,83 @@
+table fact_consumos
+	lineageTag: 13a21992-fa84-46ff-871d-e6f2447c0a48
+
+	measure 'Total registros consumo' = COUNTROWS(fact_consumos)
+		formatString: 0
+		lineageTag: 0b059f43-dda7-4d78-8ffd-a85a3ef4b132
+
+	measure Consumo =
+			IF(
+			    HASONEVALUE(dim_insumos[unidad_medida]),
+			    SUM(fact_consumos[cantidad]),
+			    BLANK()
+			)
+		lineageTag: 80d04b46-54ad-4526-a030-fca2fa859864
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column id_consumo
+		dataType: string
+		lineageTag: edc4f63a-a76b-44bf-8ab1-6a51223b963d
+		summarizeBy: none
+		sourceColumn: id_consumo
+
+		annotation SummarizationSetBy = Automatic
+
+	column id_atencion
+		dataType: string
+		lineageTag: 826b8bb4-f531-4e40-9ba0-0f63a7cb3f0f
+		summarizeBy: none
+		sourceColumn: id_atencion
+
+		annotation SummarizationSetBy = Automatic
+
+	column id_insumo
+		dataType: string
+		lineageTag: 5a2dbf63-8149-45b9-824d-9b3ce8feb776
+		summarizeBy: none
+		sourceColumn: id_insumo
+
+		annotation SummarizationSetBy = Automatic
+
+	column id_medico
+		dataType: string
+		lineageTag: b46c64fa-4a26-4760-981a-1682e39ca065
+		summarizeBy: none
+		sourceColumn: id_medico
+
+		annotation SummarizationSetBy = Automatic
+
+	column fecha
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: cec5a36a-6d85-4dfb-8620-c9a608e02a08
+		summarizeBy: none
+		sourceColumn: fecha
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column cantidad
+		dataType: double
+		lineageTag: 778556fc-40fb-469d-b607-a1389a833d43
+		summarizeBy: sum
+		sourceColumn: cantidad
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition fact_consumos = m
+		mode: import
+		source =
+				let
+				    Origen = PostgreSQL.Database("localhost:5433", "medicore"),
+				    analitica_fact_consumos = Origen{[Schema="analitica",Item="fact_consumos"]}[Data]
+				in
+				    analitica_fact_consumos
+
+	annotation PBI_NavigationStepName = Navegación
+
+	annotation PBI_ResultType = Table
+

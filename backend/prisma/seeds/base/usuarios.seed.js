@@ -6,63 +6,63 @@ export const usuariosBase = [
     correo: "admin.demo@medicore.test",
     nombre_completo: "Administrador Demo",
     rol: "ADMINISTRADOR",
-    password: "Admin123!",
+    passwordEnv: "DEMO_ADMIN_PASSWORD",
   },
   {
     nombre_usuario: "recepcion.demo",
     correo: "recepcion.demo@medicore.test",
     nombre_completo: "Recepción Demo",
     rol: "ADMISION",
-    password: "Recepcion123!",
+    passwordEnv: "DEMO_ADMISION_PASSWORD",
   },
   {
     nombre_usuario: "elena.soto",
     correo: "elena.soto@medicore.test",
     nombre_completo: "Elena Soto",
     rol: "MEDICO",
-    password: "Medico123!",
+    passwordEnv: "DEMO_MEDICO_PASSWORD",
   },
   {
     nombre_usuario: "david.chen",
     correo: "david.chen@medicore.test",
     nombre_completo: "David Chen",
     rol: "MEDICO",
-    password: "Medico123!",
+    passwordEnv: "DEMO_MEDICO_PASSWORD",
   },
   {
     nombre_usuario: "inventario.demo",
     correo: "inventario.demo@medicore.test",
     nombre_completo: "Inventario Demo",
     rol: "INVENTARIO",
-    password: "Inventario123!",
+    passwordEnv: "DEMO_INVENTARIO_PASSWORD",
   },
   {
     nombre_usuario: "sofia.mora",
     correo: "sofia.mora@medicore.test",
     nombre_completo: "Sofía Mora",
     rol: "MEDICO",
-    password: "Medico123!",
+    passwordEnv: "DEMO_MEDICO_PASSWORD",
   },
   {
     nombre_usuario: "andres.vargas",
     correo: "andres.vargas@medicore.test",
     nombre_completo: "Andrés Vargas",
     rol: "MEDICO",
-    password: "Medico123!",
+    passwordEnv: "DEMO_MEDICO_PASSWORD",
   },
   {
     nombre_usuario: "valeria.rojas",
     correo: "valeria.rojas@medicore.test",
     nombre_completo: "Valeria Rojas",
     rol: "MEDICO",
-    password: "Medico123!",
+    passwordEnv: "DEMO_MEDICO_PASSWORD",
   },
   {
     nombre_usuario: "carlos.mendez",
     correo: "carlos.mendez@medicore.test",
     nombre_completo: "Carlos Méndez",
     rol: "MEDICO",
-    password: "Medico123!",
+    passwordEnv: "DEMO_MEDICO_PASSWORD",
   },
 ];
 
@@ -85,7 +85,15 @@ export async function sembrarUsuarios(prisma) {
       continue;
     }
 
-    const hash = await bcrypt.hash(usuario.password, 12);
+    const password = process.env[usuario.passwordEnv];
+    if (!password?.trim()) {
+      throw new Error(
+        "Configura " +
+          usuario.passwordEnv +
+          " en backend/.env para crear usuarios de demo.",
+      );
+    }
+    const hash = await bcrypt.hash(password, 12);
 
     await prisma.usuarios.create({
       data: {

@@ -1,0 +1,63 @@
+table fact_atenciones
+	lineageTag: 696c62d9-544d-44f8-8bd2-e57271ab7b0e
+
+	measure 'Total atenciones' = COUNTROWS(fact_atenciones)
+		formatString: 0
+		lineageTag: b0e8c0f4-dadb-4b2f-9a58-8ef3bde4100c
+
+	column id_atencion
+		dataType: string
+		lineageTag: af2eddab-e57e-46d8-8974-5ba264c7645e
+		summarizeBy: none
+		sourceColumn: id_atencion
+
+		annotation SummarizationSetBy = Automatic
+
+	column id_cita
+		dataType: string
+		lineageTag: 5d561f04-29f6-4f53-b7e9-2b09c1c55b9d
+		summarizeBy: none
+		sourceColumn: id_cita
+
+		annotation SummarizationSetBy = Automatic
+
+	column id_medico
+		dataType: string
+		lineageTag: 78be0545-564d-44a4-9139-e363a2043787
+		summarizeBy: none
+		sourceColumn: id_medico
+
+		annotation SummarizationSetBy = Automatic
+
+	column fecha
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 2e0f8734-c09f-4c79-aa2b-6abf749eb43f
+		summarizeBy: none
+		sourceColumn: fecha
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column estado
+		dataType: string
+		lineageTag: 9dd10c67-b306-4faa-8694-904c1bb60e72
+		summarizeBy: none
+		sourceColumn: estado
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fact_atenciones = m
+		mode: import
+		source =
+				let
+				    Origen = PostgreSQL.Database("localhost:5433", "medicore"),
+				    analitica_fact_atenciones = Origen{[Schema="analitica",Item="fact_atenciones"]}[Data]
+				in
+				    analitica_fact_atenciones
+
+	annotation PBI_NavigationStepName = Navegación
+
+	annotation PBI_ResultType = Table
+

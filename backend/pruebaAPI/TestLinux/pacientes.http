@@ -1,23 +1,27 @@
 # pacientes.http
 @baseUrl = http://localhost:3000/api
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUxOTU4MTksImV4cCI6MTc5NTE5OTQxOSwic3ViIjoiMiJ9.MQPjJEoLPqgWpV-PLHqTSGkPe7XyiDhBT0hNbe6HO8c
+@token = {{login.response.body.data.token}}
 
 ### Login administrador
+# @name login
+# @prompt demoPassword Contraseña local del usuario de demostración
 POST http://localhost:3000/api/auth/login
 Content-Type: application/json
 
 {
   "nombre_usuario": "admin.demo",
-  "password": "Admin123!"
+  "password": "{{demoPassword}}"
 }
 
 ### Login Recepcion - ADMISION
+# @name loginAlternativo2
+# @prompt demoPassword Contraseña local del usuario de demostración
 POST http://localhost:3000/api/auth/login
 Content-Type: application/json
 
 {
   "nombre_usuario": "recepcion.demo",
-  "password": "Recepcion123!"
+  "password": "{{demoPassword}}"
 }
 
 ### Registrar paciente correctamente
