@@ -6,7 +6,7 @@
 # Los endpoints marcados PENDIENTE requieren implementar el módulo completo.
 
 @baseUrl = http://localhost:3000/api
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUyMTUwMTAsImV4cCI6MTc5NTIxODYxMCwic3ViIjoiMyJ9.2H26eDmcHh7iKI4OKIYvbSZrmPcx6TD1b411VQOKp4o
+@token = {{loginAdmin.response.body.data.token}}
 @fecha = 2026-12-03
 @fechaDesde = 2026-01-01
 @fechaHasta = 2026-11-30
@@ -23,21 +23,24 @@
 
 ### Login administrador
 # @name loginAdmin
+# @prompt demoPassword Contraseña local del usuario de demostración
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
   "nombre_usuario": "admin.demo",
-  "password": "Admin123!"
+  "password": "{{demoPassword}}"
 }
 
 ### Login médico
+# @name loginAlternativo2
+# @prompt demoPassword Contraseña local del usuario de demostración
 POST http://localhost:3000/api/auth/login
 Content-Type: application/json
 
 {
   "nombre_usuario": "elena.soto",
-  "password": "Medico123!"
+  "password": "{{demoPassword}}"
 }
 
 ##############################################

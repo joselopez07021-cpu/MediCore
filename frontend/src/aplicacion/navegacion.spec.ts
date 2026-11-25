@@ -284,7 +284,7 @@ describe('Páginas y permisos de MediCore', () => {
         id_medico: idMedico,
         paciente: 'Paciente de PostgreSQL',
         medico: 'Profesional de PostgreSQL',
-        fecha_hora_inicio: '2026-11-24T14:30:00.000Z',
+        fecha_hora_inicio: `${agenda.date()}T14:30:00.000Z`,
         motivo: 'Consulta real',
         estado: 'CONFIRMADA',
       };
@@ -298,12 +298,14 @@ describe('Páginas y permisos de MediCore', () => {
       expect(harness.routeNativeElement?.textContent).toContain('08:30');
       expect(harness.routeNativeElement?.textContent).not.toContain('Ana Sofía Martínez');
 
-      agenda.date.set('2026-11-25');
+      // Debe cambiar la fecha incluso cuando el reloj del equipo está en el día de prueba.
+      const fechaSinCitas = agenda.date() === '2026-11-25' ? '2026-11-24' : '2026-11-25';
+      agenda.date.set(fechaSinCitas);
       harness.detectChanges();
       expect(agenda.citasReales()).toEqual([]);
       http
         .expectOne(
-          (req) => req.url.endsWith('/citas/agenda') && req.params.get('fecha') === '2026-11-25',
+          (req) => req.url.endsWith('/citas/agenda') && req.params.get('fecha') === fechaSinCitas,
         )
         .flush({ message: 'Agenda', data: [] });
       harness.detectChanges();
@@ -398,7 +400,7 @@ describe('Páginas y permisos de MediCore', () => {
     login.enter();
     expect(login.form.invalid).toBe(true);
     http.expectNone('http://localhost:3000/api/auth/login');
-    login.form.patchValue({ username: 'admin.demo', password: 'Admin123!' });
+    login.form.patchValue({ username: 'admin.demo', password: 'clave-simulada-admin' });
     login.enter();
     expect(login.enviando()).toBe(true);
     // Un segundo envío mientras esperamos no debe duplicar la solicitud.
@@ -407,7 +409,7 @@ describe('Páginas y permisos de MediCore', () => {
     expect(solicitud.request.method).toBe('POST');
     expect(solicitud.request.body).toEqual({
       nombre_usuario: 'admin.demo',
-      password: 'Admin123!',
+      password: 'clave-simulada-admin',
     });
     expect(auth.usuario()).toBeNull();
     solicitud.flush(respuestaLogin('ADMINISTRADOR'));
@@ -450,7 +452,7 @@ describe('Páginas y permisos de MediCore', () => {
     const http = TestBed.inject(HttpTestingController);
     const harness = await RouterTestingHarness.create('/inventario/movimientos');
     let login = harness.routeDebugElement!.componentInstance as Login;
-    login.form.patchValue({ username: 'inventario.demo', password: 'Inventario123!' });
+    login.form.patchValue({ username: 'inventario.demo', password: 'clave-simulada-inventario' });
     login.enter();
     http.expectOne('http://localhost:3000/api/auth/login').flush(respuestaLogin('INVENTARIO'));
     await harness.fixture.whenStable();
@@ -462,7 +464,7 @@ describe('Páginas y permisos de MediCore', () => {
     await harness.navigateByUrl('/login?returnUrl=https%3A%2F%2Fexample.com');
     login = harness.routeDebugElement!.componentInstance as Login;
     expect(login.destination).toBeNull();
-    login.form.patchValue({ username: 'admin.demo', password: 'Admin123!' });
+    login.form.patchValue({ username: 'admin.demo', password: 'clave-simulada-admin' });
     login.enter();
     http.expectOne('http://localhost:3000/api/auth/login').flush(respuestaLogin('ADMINISTRADOR'));
     await harness.fixture.whenStable();

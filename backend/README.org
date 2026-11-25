@@ -122,7 +122,7 @@ DATABASE_URL="postgresql://postgres:TU_CONTRASENA@localhost:5432/medicore_demo"
 PORT=3000
 NODE_ENV=development
 CORS_ORIGIN="http://localhost:4200"
-JWT_SECRET="TU_SECRETO_GENERADO"
+JWT_SECRET=""
 JWT_EXPIRES_IN="1h"
 #+end_src
 
@@ -139,6 +139,20 @@ No usar una cadena de ejemplo como secreto de una instalación real.
 Si contiene caracteres especiales, codificarlos para una URL.
 
 IMPORTANTE: Nunca subir .env a GitHub.
+
+Las contraseñas de usuarios de demostración se configuran únicamente en el entorno
+local mediante DEMO_ADMIN_PASSWORD, DEMO_ADMISION_PASSWORD, DEMO_MEDICO_PASSWORD y
+DEMO_INVENTARIO_PASSWORD. Completar esas variables de .env.example en .env antes
+de crear usuarios nuevos con las semillas. No se incluyen valores predeterminados.
+La siembra no cambia contraseñas de usuarios existentes. El script
+scripts/set-demo-passwords.js solo debe ejecutarse expresamente para restablecer
+las cuentas ficticias; no ejecutarlo en una base con usuarios reales.
+
+En pruebaAPI/TestLinux, ejecutar primero la petición de login nombrada. REST Client
+solicita la contraseña local mediante un prompt y obtiene el token de la respuesta;
+no pegar contraseñas ni JWT dentro de los archivos .http. Para probar otro rol,
+usar el nombre de su petición de login en la referencia de @token.
+Referencia: https://github.com/Huachao/vscode-restclient#variables
 
 ** 5. Ejecutar migraciones de Prisma
 

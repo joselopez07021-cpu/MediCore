@@ -1,14 +1,16 @@
 # agendaMedica.http
 @baseUrl = http://localhost:3000/api
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3OTUxOTQ0MTEsImV4cCI6MTc5NTE5ODAxMSwic3ViIjoiMiJ9.vdBQg-__Hh_8oTJcbzEEgU8inRO9gK1dNmfKH4zJflQ
+@token = {{login.response.body.data.token}}
 
 ### Login Recepcion - ADMISION
+# @name login
+# @prompt demoPassword Contraseña local del usuario de demostración
 POST http://localhost:3000/api/auth/login
 Content-Type: application/json
 
 {
   "nombre_usuario": "recepcion.demo",
-  "password": "Recepcion123!"
+  "password": "{{demoPassword}}"
 }
 
 ### Agenda médica - Todas las citas del día

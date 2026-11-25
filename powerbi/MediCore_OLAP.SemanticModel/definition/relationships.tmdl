@@ -1,0 +1,48 @@
+relationship AutoDetected_1bff4d3a-9179-41b4-8f3a-3276b7d817f4
+	fromColumn: fact_consumos.id_insumo
+	toColumn: dim_insumos.id_insumo
+
+relationship AutoDetected_ae16a870-46e3-4bc8-a0b8-4cba049fd99e
+	fromColumn: fact_movimientos.id_insumo
+	toColumn: dim_insumos.id_insumo
+
+relationship AutoDetected_4b4433b3-b1ce-4518-ab7f-1723c3285ee3
+	fromColumn: fact_atenciones.id_medico
+	toColumn: dim_medicos.id_medico
+
+relationship AutoDetected_84014afd-b508-4fb1-a8ea-11366579ced0
+	fromColumn: fact_citas.id_medico
+	toColumn: dim_medicos.id_medico
+
+relationship AutoDetected_de686f37-9be6-44c7-8696-f0c6dfdf9f97
+	fromColumn: fact_consumos.id_medico
+	toColumn: dim_medicos.id_medico
+
+relationship AutoDetected_44dd6d7d-9608-4ff8-b964-026f2aab5275
+	fromColumn: fact_servicios.id_medico
+	toColumn: dim_medicos.id_medico
+
+relationship AutoDetected_243676de-71c5-4e0c-953f-855490b8a045
+	fromColumn: fact_servicios.id_servicio
+	toColumn: dim_servicios.id_servicio
+
+relationship 628e350a-ab91-313c-1dbc-2fb75564fdcd
+	fromColumn: fact_citas.fecha
+	toColumn: dim_fecha.fecha
+
+relationship 0ddb79f0-be57-7367-2448-7057a74e5c99
+	fromColumn: fact_atenciones.fecha
+	toColumn: dim_fecha.fecha
+
+relationship e9ae9795-6407-7fe7-6f82-d1e3ccc3ac7f
+	fromColumn: fact_servicios.fecha
+	toColumn: dim_fecha.fecha
+
+relationship f005aac8-12ac-f7b5-5c26-ea5682963f96
+	fromColumn: fact_consumos.fecha
+	toColumn: dim_fecha.fecha
+
+relationship 7878fd79-8285-a17e-c9e4-3a14d2a7c30d
+	fromColumn: fact_movimientos.fecha
+	toColumn: dim_fecha.fecha
+

@@ -23,3 +23,67 @@ npm-debug.log*
 # Archivos del sistema operativo
 .DS_Store
 Thumbs.db
+
+# Power BI: caché, datos importados y configuración local
+**/.pbi/
+**/cache.abf
+**/localSettings.json
+
+# Credenciales locales (las plantillas de entorno se conservan)
+*.env
+*.env.*
+!.env.example
+!*.env.example
+.envrc
+.pgpass
+pgpass.conf
+pg_service.conf
+.pg_service.conf
+credentials.json
+service-account*.json
+.aws/
+
+# Claves privadas, almacenes y certificados de una instalación local
+*.key
+*.pem
+*.pfx
+*.p12
+*.p8
+*.jks
+*.keystore
+*.crt
+*.cer
+*.der
+*.csr
+*.srl
+id_rsa
+id_ed25519
+id_ecdsa
+id_dsa
+
+# Temporales y copias locales
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+~$*
+.tmp/
+tmp/
+temp/
+
+# Datos y respaldos locales de PostgreSQL: no forman parte del código fuente
+pgdata/
+postgres-data/
+postgresql-data/
+PG_VERSION
+pg_wal/
+pg_xact/
+postmaster.pid
+postmaster.opts
+*.dump
+*.backup
+*.sql.gz
+*.sql.bz2
+*.sql.zip

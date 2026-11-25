@@ -1,0 +1,84 @@
+table dim_fecha
+	lineageTag: d38258aa-aadc-4cc4-8518-5ee414a409b8
+	dataCategory: Time
+
+	column fecha
+		dataType: dateTime
+		isKey
+		formatString: Long Date
+		lineageTag: 05e8ede8-68eb-4909-b48a-134a00ff9f27
+		summarizeBy: none
+		sourceColumn: fecha
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column anio
+		dataType: int64
+		formatString: 0
+		lineageTag: f3b6838a-d6fb-4cc1-88fd-cd1e147957e9
+		summarizeBy: sum
+		sourceColumn: anio
+
+		annotation SummarizationSetBy = Automatic
+
+	column trimestre
+		dataType: int64
+		formatString: 0
+		lineageTag: 4bb66c03-be59-4c2f-95f2-af1c16bd7ed7
+		summarizeBy: sum
+		sourceColumn: trimestre
+
+		annotation SummarizationSetBy = Automatic
+
+	column mes
+		dataType: int64
+		formatString: 0
+		lineageTag: b4478544-0017-4a14-8cb2-43e1f3ae6d60
+		summarizeBy: sum
+		sourceColumn: mes
+
+		annotation SummarizationSetBy = Automatic
+
+	column dia
+		dataType: int64
+		formatString: 0
+		lineageTag: 5f25a4ff-f3cc-406f-a0fe-9ff0bd306111
+		summarizeBy: sum
+		sourceColumn: dia
+
+		annotation SummarizationSetBy = Automatic
+
+	hierarchy Jerarquíatemporal
+		lineageTag: abf405f2-c7b0-4081-953c-bd6a8db0bb5f
+
+		level anio
+			lineageTag: 0c87cb7a-7be5-45cd-ab14-c19f902caf24
+			column: anio
+
+		level trimestre
+			lineageTag: ec2dfedd-5cf9-4035-997f-3b6ad2fda647
+			column: trimestre
+
+		level mes
+			lineageTag: 734cfdf7-3719-48cb-a21a-7f770fed6bf2
+			column: mes
+
+		level dia
+			lineageTag: ed6b8361-49ee-445d-b277-65e26277e012
+			column: dia
+
+	partition dim_fecha = m
+		mode: import
+		source =
+				let
+				    Origen = PostgreSQL.Database("localhost:5433", "medicore"),
+				    analitica_dim_fecha = Origen{[Schema="analitica",Item="dim_fecha"]}[Data]
+				in
+				    analitica_dim_fecha
+
+	annotation PBI_NavigationStepName = Navegación
+
+	annotation PBI_ResultType = Table
+

@@ -3,16 +3,25 @@ import bcrypt from "bcrypt";
 import prisma from "../src/config/prisma.js";
 
 const usuariosDemo = [
-    { nombre_usuario: "admin.demo", password: "Admin123!" },
-    { nombre_usuario: "recepcion.demo", password: "Recepcion123!" },
-    { nombre_usuario: "elena.soto", password: "Medico123!" },
-    { nombre_usuario: "david.chen", password: "Medico123!" },
-    { nombre_usuario: "inventario.demo", password: "Inventario123!" }
+    { nombre_usuario: "admin.demo", passwordEnv: "DEMO_ADMIN_PASSWORD" },
+    { nombre_usuario: "recepcion.demo", passwordEnv: "DEMO_ADMISION_PASSWORD" },
+    { nombre_usuario: "elena.soto", passwordEnv: "DEMO_MEDICO_PASSWORD" },
+    { nombre_usuario: "david.chen", passwordEnv: "DEMO_MEDICO_PASSWORD" },
+    { nombre_usuario: "inventario.demo", passwordEnv: "DEMO_INVENTARIO_PASSWORD" }
 ];
 
 async function main() {
+    if (process.env.NODE_ENV === "production") {
+        throw new Error("El restablecimiento de contraseñas de demo no está permitido en producción.");
+    }
+    // Validar todo antes de actualizar el primer usuario.
     for (const usuario of usuariosDemo) {
-        const hash = await bcrypt.hash(usuario.password, 12);
+        if (!process.env[usuario.passwordEnv]?.trim()) {
+            throw new Error("Configura " + usuario.passwordEnv + " en backend/.env.");
+        }
+    }
+    for (const usuario of usuariosDemo) {
+        const hash = await bcrypt.hash(process.env[usuario.passwordEnv], 12);
 
         await prisma.usuarios.update({
             where: {

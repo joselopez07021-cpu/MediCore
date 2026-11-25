@@ -1,0 +1,123 @@
+table dim_insumos
+	lineageTag: 7f336ec0-d141-4d9a-9078-df53c22edc33
+
+	measure 'Total insumos' =
+			CALCULATE(
+			    COUNTROWS(dim_insumos),
+			    dim_insumos[activo] = TRUE()
+			)
+		formatString: 0
+		lineageTag: d82a6eb6-1e15-409b-9f9b-5380b07179a5
+
+	measure 'Insumos por reponer' =
+			COUNTROWS(
+			    FILTER(
+			        dim_insumos,
+			        dim_insumos[activo] = TRUE() &&
+			        dim_insumos[stock_actual] <= dim_insumos[stock_minimo]
+			    )
+			) + 0
+		formatString: 0
+		lineageTag: 67287333-98ff-4c51-9450-bc3c16051eaf
+
+	measure 'Porcentaje reposicion' =
+			DIVIDE(
+			    [Insumos por reponer],
+			    [Total insumos],
+			    0
+			)
+		formatString: 0.00\ %;-0.00\ %;0.00\ %
+		lineageTag: c42a5235-d635-42cb-be9e-aaab1de96db3
+
+	measure 'Existencias actuales' =
+			IF(
+			    HASONEVALUE(dim_insumos[unidad_medida]),
+			    SUM(dim_insumos[stock_actual]),
+			    BLANK()
+			)
+		lineageTag: 58a40181-8e1d-48b2-a22d-4cffcb2e95d3
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column id_insumo
+		dataType: string
+		lineageTag: 14ef96de-1341-4455-9a8c-97f50405fb5b
+		summarizeBy: none
+		sourceColumn: id_insumo
+
+		annotation SummarizationSetBy = Automatic
+
+	column codigo
+		dataType: string
+		lineageTag: 59293afc-98cd-4bea-a2ed-8ac82f858b5c
+		summarizeBy: none
+		sourceColumn: codigo
+
+		annotation SummarizationSetBy = Automatic
+
+	column nombre
+		dataType: string
+		lineageTag: 2e8dec23-313e-4a41-b5ba-c76f3db5730d
+		summarizeBy: none
+		sourceColumn: nombre
+
+		annotation SummarizationSetBy = Automatic
+
+	column categoria
+		dataType: string
+		lineageTag: 33ffed29-afd0-4085-a2db-2fc2f4b78f0a
+		summarizeBy: none
+		sourceColumn: categoria
+
+		annotation SummarizationSetBy = Automatic
+
+	column unidad_medida
+		dataType: string
+		lineageTag: 6e75bb4e-1696-4d89-ab9f-b17dd2781dea
+		summarizeBy: none
+		sourceColumn: unidad_medida
+
+		annotation SummarizationSetBy = Automatic
+
+	column stock_actual
+		dataType: double
+		lineageTag: ff5865c2-e653-414f-b07c-783dba1bd72e
+		summarizeBy: sum
+		sourceColumn: stock_actual
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column stock_minimo
+		dataType: double
+		lineageTag: 1c9e2880-2a16-4025-a1bd-55b8197d52cf
+		summarizeBy: sum
+		sourceColumn: stock_minimo
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column activo
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 2d6169ee-d6e4-4f65-bfcd-679941ffcf16
+		summarizeBy: none
+		sourceColumn: activo
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_insumos = m
+		mode: import
+		source =
+				let
+				    Origen = PostgreSQL.Database("localhost:5433", "medicore"),
+				    analitica_dim_insumos = Origen{[Schema="analitica",Item="dim_insumos"]}[Data]
+				in
+				    analitica_dim_insumos
+
+	annotation PBI_NavigationStepName = Navegación
+
+	annotation PBI_ResultType = Table
+

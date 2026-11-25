@@ -1,0 +1,49 @@
+table dim_servicios
+	lineageTag: c56de52d-1cdc-42b5-b16b-6cc05ca42b8b
+
+	column id_servicio
+		dataType: string
+		lineageTag: 44a6748a-f30f-4cb3-8028-d11193dfcde6
+		summarizeBy: none
+		sourceColumn: id_servicio
+
+		annotation SummarizationSetBy = Automatic
+
+	column codigo
+		dataType: string
+		lineageTag: 1094d996-227c-49a4-a503-20e93bf6a9c9
+		summarizeBy: none
+		sourceColumn: codigo
+
+		annotation SummarizationSetBy = Automatic
+
+	column nombre
+		dataType: string
+		lineageTag: 753b423f-d608-45e4-a07f-d6d74a24fe30
+		summarizeBy: none
+		sourceColumn: nombre
+
+		annotation SummarizationSetBy = Automatic
+
+	column activo
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 8c6e12fc-3226-4ac7-a3dc-183593612e2d
+		summarizeBy: none
+		sourceColumn: activo
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_servicios = m
+		mode: import
+		source =
+				let
+				    Origen = PostgreSQL.Database("localhost:5433", "medicore"),
+				    analitica_dim_servicios = Origen{[Schema="analitica",Item="dim_servicios"]}[Data]
+				in
+				    analitica_dim_servicios
+
+	annotation PBI_NavigationStepName = Navegación
+
+	annotation PBI_ResultType = Table
+
