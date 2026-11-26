@@ -168,36 +168,58 @@ test(
         );
         assert.equal((await pedir("/reportes", tokens.medico)).status, 403);
       });
-      await t.test("paginación y filtros inválidos devuelven 400 sin fallos internos", async () => {
-        for (const ruta of [
-          "/pacientes/paginados",
-          "/citas/paginados",
-          "/citas/agenda/paginados?fecha=2030-01-01",
-          "/insumos/paginados",
-          "/movimientos-inventario/paginados",
-          "/atenciones/paginados",
-        ]) {
-          for (const pagina of ["0", "abc", "1.5", "9007199254740991", "9007199254740992"]) {
-            const r = await pedir(`${ruta}${ruta.includes("?") ? "&" : "?"}page=${pagina}`, tokens.admin);
-            assert.equal(r.status, 400, `${ruta}, página ${pagina}`);
+      await t.test(
+        "paginación y filtros inválidos devuelven 400 sin fallos internos",
+        async () => {
+          for (const ruta of [
+            "/pacientes/paginados",
+            "/citas/paginados",
+            "/citas/agenda/paginados?fecha=2030-01-01",
+            "/insumos/paginados",
+            "/movimientos-inventario/paginados",
+            "/atenciones/paginados",
+          ]) {
+            for (const pagina of [
+              "0",
+              "abc",
+              "1.5",
+              "9007199254740991",
+              "9007199254740992",
+            ]) {
+              const r = await pedir(
+                `${ruta}${ruta.includes("?") ? "&" : "?"}page=${pagina}`,
+                tokens.admin,
+              );
+              assert.equal(r.status, 400, `${ruta}, página ${pagina}`);
+            }
           }
-        }
-        for (const filtro of [
-          "id_medico=9223372036854775808",
-          "id_medico=1&id_medico=1",
-          "fecha_desde=",
-          "fecha_hasta=",
-          "fecha_desde=2030-02-30",
-          "fecha_desde=2030-02-01&fecha_hasta=2030-01-01",
-        ]) {
-          assert.equal((await pedir(`/citas/resumen?${filtro}`, tokens.admin)).status, 400, filtro);
-        }
-        for (const ruta of ["/pacientes/paginados", "/citas/paginados", "/insumos/paginados", "/movimientos-inventario/paginados", "/atenciones/paginados"]) {
-          const r = await pedir(`${ruta}?page=1`, tokens.admin);
-          assert.equal(r.status, 200, ruta);
-          assert.ok(Array.isArray(r.body.data), ruta);
-        }
-      });
+          for (const filtro of [
+            "id_medico=9223372036854775808",
+            "id_medico=1&id_medico=1",
+            "fecha_desde=",
+            "fecha_hasta=",
+            "fecha_desde=2030-02-30",
+            "fecha_desde=2030-02-01&fecha_hasta=2030-01-01",
+          ]) {
+            assert.equal(
+              (await pedir(`/citas/resumen?${filtro}`, tokens.admin)).status,
+              400,
+              filtro,
+            );
+          }
+          for (const ruta of [
+            "/pacientes/paginados",
+            "/citas/paginados",
+            "/insumos/paginados",
+            "/movimientos-inventario/paginados",
+            "/atenciones/paginados",
+          ]) {
+            const r = await pedir(`${ruta}?page=1`, tokens.admin);
+            assert.equal(r.status, 200, ruta);
+            assert.ok(Array.isArray(r.body.data), ruta);
+          }
+        },
+      );
       let paciente;
       const datosPaciente = {
         nombre: "Paciente",
@@ -397,13 +419,18 @@ test(
               motivo: "Prueba",
             });
           assert.equal((await mover("ENTRADA", 10)).status, 201);
-          const recibido = await pedir("/insumos/" + insumo.id_insumo, tokens.inventario);
+          const recibido = await pedir(
+            "/insumos/" + insumo.id_insumo,
+            tokens.inventario,
+          );
           assert.equal(recibido.status, 200);
           assert.equal(Number(recibido.body.data.stock_actual), 10);
           assert.equal(recibido.body.data.estado, "DISPONIBLE");
           const listado = await pedir("/insumos", tokens.inventario);
           assert.equal(
-            listado.body.data.find((item) => item.id_insumo === insumo.id_insumo).estado,
+            listado.body.data.find(
+              (item) => item.id_insumo === insumo.id_insumo,
+            ).estado,
             "DISPONIBLE",
           );
           assert.equal((await mover("SALIDA", 11)).status, 409);
@@ -588,6 +615,198 @@ test(
                 .body.data.stock_actual,
             ),
             2.75,
+          );
+        },
+      );
+      await t.test(
+        "médicos: CRUD, cuenta asociada, permisos y conservación del historial",
+        async () => {
+          const datos = {
+            identificacion: "MED-CRUD",
+            nombre: "Ana",
+            apellido: "Mora",
+            especialidad: "Pediatría",
+            telefono: "88888888",
+            correo: "medico.crud@example.com",
+            nombre_usuario: "medico.crud",
+            password: "MedicoCrud123!",
+          };
+          for (const token of [
+            tokens.admision,
+            tokens.medico,
+            tokens.inventario,
+          ]) {
+            assert.equal(
+              (await pedir("/medicos", token, "POST", datos)).status,
+              403,
+            );
+            assert.equal(
+              (await pedir(`/medicos/${medico.id_medico}`, token, "PUT", datos))
+                .status,
+              403,
+            );
+            assert.equal(
+              (await pedir(`/medicos/${medico.id_medico}`, token, "DELETE"))
+                .status,
+              403,
+            );
+            assert.equal(
+              (
+                await pedir(
+                  `/medicos/${medico.id_medico}/estado`,
+                  token,
+                  "PATCH",
+                  { activo: false },
+                )
+              ).status,
+              403,
+            );
+          }
+          const totalUsuarios = await prisma.usuarios.count();
+          assert.equal(
+            (
+              await pedir("/medicos", tokens.admin, "POST", {
+                ...datos,
+                password: "corta",
+              })
+            ).status,
+            400,
+          );
+          assert.equal(
+            (
+              await pedir("/medicos", tokens.admin, "POST", {
+                ...datos,
+                correo: "invalido",
+              })
+            ).status,
+            400,
+          );
+          assert.equal(await prisma.usuarios.count(), totalUsuarios);
+          const creado = await pedir("/medicos", tokens.admin, "POST", datos);
+          assert.equal(creado.status, 201);
+          const id = creado.body.data.id_medico;
+          assert.equal(typeof id, "string");
+          assert.equal("password" in creado.body.data, false);
+          assert.equal("password_hash" in creado.body.data, false);
+          const acceder = () =>
+            pedir("/auth/login", null, "POST", {
+              nombre_usuario: datos.nombre_usuario,
+              password: datos.password,
+            });
+          const login = await acceder();
+          assert.equal(login.status, 200);
+          assert.equal(login.body.data.usuario.rol, "MEDICO");
+          assert.equal(login.body.data.usuario.id_medico, id);
+          const registro = await prisma.usuarios.findUnique({
+            where: { nombre_usuario: datos.nombre_usuario },
+          });
+          assert.notEqual(registro.password_hash, datos.password);
+          assert.equal(
+            await bcrypt.compare(datos.password, registro.password_hash),
+            true,
+          );
+          assert.equal(
+            (await pedir(`/medicos/${id}`, tokens.admision)).status,
+            200,
+          );
+          const duplicado = await pedir("/medicos", tokens.admin, "POST", {
+            ...datos,
+            nombre_usuario: "cuenta.rollback",
+            correo: "rollback@example.com",
+          });
+          assert.equal(duplicado.status, 409);
+          assert.equal(await prisma.usuarios.count(), totalUsuarios + 1);
+          assert.equal(
+            await prisma.usuarios.findUnique({
+              where: { nombre_usuario: "cuenta.rollback" },
+            }),
+            null,
+          );
+          assert.equal(
+            (
+              await pedir(`/medicos/${id}`, tokens.admin, "PUT", {
+                ...datos,
+                nombre: "Editada",
+                correo: "admin@example.com",
+              })
+            ).status,
+            409,
+          );
+          assert.equal(
+            (await pedir(`/medicos/${id}`, tokens.admin)).body.data.nombre,
+            "Ana",
+          );
+          const editado = await pedir(`/medicos/${id}`, tokens.admin, "PUT", {
+            ...datos,
+            apellido: "Rojas",
+            correo: "medico.editado@example.com",
+            password: "NoCambiar123!",
+          });
+          assert.equal(editado.status, 200);
+          assert.equal(editado.body.data.nombre_completo, "Ana Rojas");
+          const actualizado = await acceder();
+          assert.equal(actualizado.status, 200);
+          assert.equal(
+            actualizado.body.data.usuario.correo,
+            "medico.editado@example.com",
+          );
+          assert.equal(
+            actualizado.body.data.usuario.nombre_completo,
+            "Ana Rojas",
+          );
+          // El médico original tiene citas pendientes; no se debe dejar la agenda sin atención.
+          assert.equal(
+            (
+              await pedir(
+                `/medicos/${medico.id_medico}`,
+                tokens.admin,
+                "DELETE",
+              )
+            ).status,
+            409,
+          );
+          assert.equal(
+            (
+              await pedir(`/medicos/${id}/estado`, tokens.admin, "PATCH", {
+                activo: "false",
+              })
+            ).status,
+            400,
+          );
+          assert.equal(
+            (await pedir(`/medicos/${id}`, tokens.admin, "DELETE")).status,
+            200,
+          );
+          assert.equal((await acceder()).status, 401);
+          assert.equal(
+            (await pedir("/auth/me", login.body.data.token)).status,
+            401,
+          );
+          assert.equal(
+            (await pedir(`/medicos/${id}`, tokens.admin)).body.data.activo,
+            false,
+          );
+          assert.ok(
+            await prisma.medicos.findUnique({
+              where: { id_medico: BigInt(id) },
+            }),
+          );
+          assert.equal(
+            (
+              await pedir(`/medicos/${id}/estado`, tokens.admin, "PATCH", {
+                activo: true,
+              })
+            ).status,
+            200,
+          );
+          assert.equal((await acceder()).status, 200);
+          assert.equal(
+            (await pedir("/medicos/no-es-id", tokens.admin)).status,
+            400,
+          );
+          assert.equal(
+            (await pedir("/medicos/9223372036854775807", tokens.admin)).status,
+            404,
           );
         },
       );
