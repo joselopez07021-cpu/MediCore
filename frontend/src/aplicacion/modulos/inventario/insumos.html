@@ -113,6 +113,11 @@
 @if (editing() !== undefined) {
   <mc-editor
     [title]="editing() ? 'Editar insumo' : 'Nuevo insumo'"
+    [description]="
+      editing()
+        ? 'El stock mínimo define cuándo solicitar reposición; cambiarlo no agrega ni retira unidades. Para cambiar las existencias, registra un movimiento.'
+        : 'El insumo se crea con existencia 0. El stock mínimo es el umbral de alerta, no la cantidad recibida. Después de guardar, ve a Registrar movimiento y selecciona Entrada para agregar unidades.'
+    "
     [fields]="fields()"
     [values]="values()"
     [error]="error()"

@@ -388,6 +388,7 @@ test(
           assert.equal(r.status, 201);
           insumo = r.body.data;
           assert.equal(Number(insumo.stock_actual), 0);
+          assert.equal(insumo.estado, "AGOTADO");
           const mover = (tipo, cantidad) =>
             pedir("/movimientos-inventario", tokens.inventario, "POST", {
               id_insumo: insumo.id_insumo,
@@ -396,6 +397,15 @@ test(
               motivo: "Prueba",
             });
           assert.equal((await mover("ENTRADA", 10)).status, 201);
+          const recibido = await pedir("/insumos/" + insumo.id_insumo, tokens.inventario);
+          assert.equal(recibido.status, 200);
+          assert.equal(Number(recibido.body.data.stock_actual), 10);
+          assert.equal(recibido.body.data.estado, "DISPONIBLE");
+          const listado = await pedir("/insumos", tokens.inventario);
+          assert.equal(
+            listado.body.data.find((item) => item.id_insumo === insumo.id_insumo).estado,
+            "DISPONIBLE",
+          );
           assert.equal((await mover("SALIDA", 11)).status, 409);
           assert.equal((await mover("SALIDA", 1.5)).status, 400);
           assert.equal((await mover("SALIDA", 1)).status, 201);

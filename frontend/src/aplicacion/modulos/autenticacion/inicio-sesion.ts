@@ -34,7 +34,7 @@ import { AutenticacionApi } from '../../servicios/servicio-autenticacion-api';
     </section>
     <section class="flex items-center justify-center bg-white px-6 py-12">
       <div class="w-full max-w-md">
-        <span class="badge badge-green">DEMOSTRACIÓN INTERACTIVA</span>
+        <span class="badge badge-green">ACCESO AL SISTEMA</span>
         <h2 class="mt-6 text-3xl font-bold text-slate-900">Bienvenido a MediCore</h2>
         <p class="mb-8 mt-3 text-sm text-slate-500">
           {{
@@ -52,7 +52,7 @@ import { AutenticacionApi } from '../../servicios/servicio-autenticacion-api';
               placeholder="Escribe tu usuario"
             />
             @if (form.controls.username.touched && form.controls.username.invalid) {
-              <span class="text-xs text-rose-600">Ingresa el usuario de prueba.</span>
+              <span class="text-xs text-rose-600">Ingresa tu usuario.</span>
             }
           </label>
           <label class="field"
@@ -64,7 +64,7 @@ import { AutenticacionApi } from '../../servicios/servicio-autenticacion-api';
               placeholder="Escribe tu contraseña"
             />
             @if (form.controls.password.touched && form.controls.password.invalid) {
-              <span class="text-xs text-rose-600">Ingresa la contraseña de prueba.</span>
+              <span class="text-xs text-rose-600">Ingresa tu contraseña.</span>
             }
           </label>
           @if (error()) {
@@ -86,7 +86,7 @@ import { AutenticacionApi } from '../../servicios/servicio-autenticacion-api';
           }
         </form>
         <p class="mt-6 rounded-xl bg-slate-50 p-4 text-xs leading-relaxed text-slate-500">
-          El acceso se valida con el servidor. Los registros de este entorno son ficticios.
+          Utiliza las credenciales asignadas a tu cuenta para acceder a las funciones de tu perfil.
         </p>
       </div>
     </section>

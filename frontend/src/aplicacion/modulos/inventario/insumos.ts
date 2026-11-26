@@ -63,7 +63,7 @@ export class Supplies {
     { key: 'unidad_medida', label: 'Unidad de medida', required: true, maxLength: 30 },
     {
       key: 'stock_minimo',
-      label: 'Existencia mínima (entero)',
+      label: 'Stock mínimo para alertas (entero)',
       type: 'number',
       min: 0,
       required: true,
@@ -115,7 +115,11 @@ export class Supplies {
         next: (r) => {
           this.guardando.set(false);
           this.editing.set(undefined);
-          this.aviso.set(r.message);
+          this.aviso.set(
+            id
+              ? r.message
+              : `${r.message} La existencia inicial es 0. Para agregar unidades, registra un movimiento de Entrada.`,
+          );
           this.cargar();
         },
         error: (e) => {

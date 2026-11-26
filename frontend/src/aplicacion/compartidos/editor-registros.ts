@@ -37,6 +37,9 @@ export interface EditorField {
           ✕
         </button>
       </div>
+      @if (description()) {
+        <p class="mb-5 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">{{ description() }}</p>
+      }
       <form [formGroup]="form" (ngSubmit)="submit()">
         <fieldset [disabled]="busy()" class="grid gap-4 sm:grid-cols-2">
           @for (f of fields(); track f.key) {
@@ -97,6 +100,7 @@ export interface EditorField {
 })
 export class RecordEditor {
   title = input('Nuevo registro');
+  description = input('');
   saveLabel = input('');
   fields = input.required<EditorField[]>();
   values = input<Record<string, unknown>>({});

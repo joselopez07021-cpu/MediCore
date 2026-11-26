@@ -12,11 +12,11 @@ interface PrototypeData {
 const modules: Record<string, PrototypeData> = {
   compras: {
     title: 'Compras y abastecimiento',
-    subtitle: 'Vista de referencia para planificar el abastecimiento hospitalario.',
+    subtitle: 'Planificación del abastecimiento hospitalario.',
     section: 'ADMINISTRACIÓN / COMPRAS',
     metrics: [
-      { label: 'Solicitudes de referencia', value: '03' },
-      { label: 'Proveedores de ejemplo', value: '04' },
+      { label: 'Solicitudes', value: '03' },
+      { label: 'Proveedores', value: '04' },
       { label: 'Órdenes en revisión', value: '02' },
     ],
     columns: ['Solicitud', 'Proveedor', 'Descripción', 'Fecha', 'Estado'],
@@ -28,14 +28,14 @@ const modules: Record<string, PrototypeData> = {
   },
   finanzas: {
     title: 'Gestión financiera y contabilidad',
-    subtitle: 'Vista de referencia para el seguimiento administrativo del hospital.',
+    subtitle: 'Seguimiento financiero y administrativo del hospital.',
     section: 'ADMINISTRACIÓN / FINANZAS',
     metrics: [
-      { label: 'Presupuesto ilustrativo', value: '$ 125,000' },
-      { label: 'Gastos ilustrativos', value: '$ 82,400' },
-      { label: 'Disponible ilustrativo', value: '$ 42,600' },
+      { label: 'Presupuesto', value: '$ 125,000' },
+      { label: 'Gastos', value: '$ 82,400' },
+      { label: 'Disponible', value: '$ 42,600' },
     ],
-    columns: ['Referencia', 'Concepto', 'Centro de costo', 'Importe ilustrativo', 'Estado'],
+    columns: ['Referencia', 'Concepto', 'Centro de costo', 'Importe', 'Estado'],
     rows: [
       ['FIN-001', 'Material hospitalario', 'Servicios médicos', '$ 12,500', 'Registrado'],
       ['FIN-002', 'Mantenimiento preventivo', 'Operaciones', '$ 4,800', 'En revisión'],
@@ -44,10 +44,10 @@ const modules: Record<string, PrototypeData> = {
   },
   rrhh: {
     title: 'Recursos humanos',
-    subtitle: 'Vista de referencia de la organización y el equipo hospitalario.',
+    subtitle: 'Organización y equipo hospitalario.',
     section: 'ADMINISTRACIÓN / RECURSOS HUMANOS',
     metrics: [
-      { label: 'Personal de ejemplo', value: '06' },
+      { label: 'Personal', value: '06' },
       { label: 'Departamentos', value: '04' },
       { label: 'Turnos representados', value: '03' },
     ],
@@ -69,13 +69,13 @@ const modules: Record<string, PrototypeData> = {
       [title]="data.title"
       [subtitle]="data.subtitle"
       [section]="data.section"
-      ><span class="badge bg-amber-100 text-amber-800">PROTOTIPO VISUAL</span></mc-page-header
+      ><span class="badge bg-amber-100 text-amber-800">DISEÑO DE MÓDULO</span></mc-page-header
     >
     <div
       class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-800"
     >
-      Este módulo presenta únicamente una interfaz de referencia con datos ilustrativos. Sus
-      operaciones no están implementadas en el alcance académico actual.
+      Esta vista presenta el diseño del módulo y sus flujos previstos. Los registros son de ejemplo
+      y las operaciones de este módulo no modifican los datos del hospital.
     </div>
     <div class="mb-6 grid gap-4 sm:grid-cols-3">
       @for (m of data.metrics; track m.label) {
@@ -91,11 +91,11 @@ const modules: Record<string, PrototypeData> = {
           {{
             data.title === 'Recursos humanos'
               ? 'Directorio de colaboradores'
-              : 'Registros de referencia'
+              : 'Registros del módulo'
           }}
         </h2>
         <input
-          aria-label="Buscar registros de referencia"
+          aria-label="Buscar registros del módulo"
           placeholder="Buscar en esta vista…"
           (input)="query.set($any($event.target).value)"
         />

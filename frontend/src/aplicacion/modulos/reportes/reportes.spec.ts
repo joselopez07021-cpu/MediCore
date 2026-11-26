@@ -97,7 +97,7 @@ describe('Reportes operativos y visor OLAP', () => {
     expect(iframe.title).toContain('Análisis OLAP');
     expect(iframe.hasAttribute('allowfullscreen')).toBe(true);
     expect(root.querySelector<HTMLElement>('#reportes-operativos')!.hidden).toBe(true);
-    expect(root.textContent).toContain('exclusivamente datos ficticios');
+    expect(root.textContent).toContain('Informe de acceso público');
     expect(root.textContent).toContain('Estado no verificado');
     expect(root.textContent).toContain('no fuerza la actualización del modelo semántico');
     pulsar('Citas y atenciones');
