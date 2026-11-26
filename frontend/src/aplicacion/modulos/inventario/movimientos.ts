@@ -24,7 +24,7 @@ import { mensajeError } from '../../nucleo/utilidades-api';
       <button class="btn-secondary" [disabled]="cargando() || guardando()" (click)="cargar()">
         Actualizar
       </button>
-      <button class="btn-primary" [disabled]="cargando() || guardando()" (click)="open()">
+      <button class="btn-primary" [disabled]="cargando() || guardando() || editing()" (click)="open()">
         ＋ Registrar movimiento
       </button>
     </mc-page-header>
@@ -191,9 +191,23 @@ export class Movements {
       });
   }
   open() {
-    if (this.guardando()) return;
+    if (this.cargando() || this.guardando() || this.editing()) return;
     this.error.set('');
-    this.editing.set(true);
+    this.cargando.set(true);
+    this.api
+      .insumos()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (r) => {
+          this.insumos.set(r.data);
+          this.cargando.set(false);
+          this.editing.set(true);
+        },
+        error: (e) => {
+          this.error.set(mensajeError(e));
+          this.cargando.set(false);
+        },
+      });
   }
   save(v: Record<string, unknown>) {
     if (this.guardando()) return;
