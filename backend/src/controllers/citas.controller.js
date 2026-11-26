@@ -1,5 +1,6 @@
 // citas.controller.js
 import { Prisma } from "@prisma/client";
+import { PaginacionError } from "../services/paginacion.utils.js";
 
 import {
   registrarCita,
@@ -16,6 +17,7 @@ import {
 
 const manejarError = (error, res) => {
   if (
+    error instanceof PaginacionError ||
     error instanceof RangeError ||
     error.message?.startsWith("El número de página") ||
     error.message === "Número de página inválido"

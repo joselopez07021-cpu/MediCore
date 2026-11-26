@@ -6,9 +6,10 @@ import {
 } from "../services/movimientos-inventario.service.js";
 
 import { InventarioError } from "../services/inventario.utils.js";
+import { PaginacionError } from "../services/paginacion.utils.js";
 
 const manejarError = (error, res) => {
-    if (error instanceof InventarioError) {
+    if (error instanceof InventarioError || error instanceof PaginacionError) {
         return res.status(error.status).json({
             message: error.message
         });

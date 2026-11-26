@@ -532,7 +532,7 @@ const ESTADOS_CITA = [
 ];
 
 function fechaValida(valor) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(valor)) return false;
+  if (typeof valor !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) return false;
 
   const fecha = new Date(`${valor}T00:00:00.000Z`);
 
@@ -557,13 +557,13 @@ function construirFiltrosResumen(query) {
   const { fecha_desde, fecha_hasta, id_medico } = query;
   const where = {};
 
-  if (fecha_desde && !fechaValida(fecha_desde)) {
+  if (fecha_desde !== undefined && !fechaValida(fecha_desde)) {
     const error = new Error("fecha_desde debe tener formato YYYY-MM-DD");
     error.status = 400;
     throw error;
   }
 
-  if (fecha_hasta && !fechaValida(fecha_hasta)) {
+  if (fecha_hasta !== undefined && !fechaValida(fecha_hasta)) {
     const error = new Error("fecha_hasta debe tener formato YYYY-MM-DD");
     error.status = 400;
     throw error;
@@ -588,13 +588,10 @@ function construirFiltrosResumen(query) {
   }
 
   if (id_medico !== undefined) {
-    if (!/^[1-9]\d*$/.test(String(id_medico))) {
-      const error = new Error("id_medico debe ser un ID válido");
-      error.status = 400;
-      throw error;
+    if (typeof id_medico !== "string") {
+      throw new CitaError("id_medico debe ser un ID válido");
     }
-
-    where.id_medico = BigInt(id_medico);
+    where.id_medico = validarId(id_medico, "id_medico");
   }
 
   return where;

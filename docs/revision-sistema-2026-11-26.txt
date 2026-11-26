@@ -1,0 +1,82 @@
+REVISIÓN DE MEDICORE — 26 DE NOVIEMBRE DE 2026
+
+Resultado
+Los módulos operativos comprobados funcionan con la base PostgreSQL configurada.
+La revisión no certifica funcionalidades todavía no implementadas ni el historial
+de actualización de servicios externos.
+
+Verificaciones realizadas
+- Frontend local en localhost:4200 y API en localhost:3000 disponibles.
+- Conexión PostgreSQL, esquema Prisma válido y dos migraciones aplicadas.
+- Acceso correcto con las nueve cuentas de demostración y sus claves locales.
+- Consultas de la API en ejecución comparadas con los conteos de DATABASE_URL.
+- CORS, autenticación, restricciones por rol y aislamiento de los médicos.
+- Registro, edición, activación, desactivación e historial de pacientes.
+- Programación, modificación, estados y agenda de citas.
+- Detección de solapamientos y reservas simultáneas.
+- Registro de atención, servicios y consumos dentro de una transacción.
+- Reversión completa de la atención cuando falta inventario.
+- Insumos, entradas, salidas y prevención de existencias negativas.
+- Descuento de consumos decimales y salidas automáticas de inventario.
+- Catálogo de servicios, directorios, indicadores, reportes y exportación CSV.
+- Recorrido de las pantallas disponibles para los cuatro roles en navegador.
+- Persistencia de sesión al recargar y restricciones al entrar por URL directa.
+- Capturas revisadas de atención móvil y reportes de escritorio.
+- Nueve vistas analíticas consultables; calendario completo y sin fechas faltantes.
+- Informe público Power BI: HTTP 200, visuales y datos visibles, sin fallos de red.
+  Se observó la página Servicios hospitalarios. Esto no verifica su actualización.
+
+Estado de la base configurada durante la revisión
+9 usuarios, 4 roles, 6 médicos, 120 pacientes, 300 citas, 210 atenciones,
+30 insumos, 240 movimientos, 12 servicios y 210 consumos.
+No se encontraron diferencias entre existencias y movimientos, consumos sin su
+salida correspondiente, citas atendidas sin atención, atenciones con cita en otro
+estado, ni citas activas solapadas para un mismo paciente o médico.
+
+Correcciones aplicadas
+- Páginas inválidas en insumos, movimientos y citas: respuesta 400 en vez de 500.
+- Identificadores de médico fuera del rango bigint en el resumen de citas:
+  validación antes de consultar PostgreSQL.
+- Fechas vacías y parámetros repetidos inválidos en el resumen de citas.
+- Prueba de navegador actualizada para la interfaz actual de Power BI.
+- Prueba del visor sin depender del servicio externo; conserva el iframe al
+  cambiar de categoría y comprueba su recarga.
+- Pruebas de regresión y recorrido de las pantallas y permisos de cada rol.
+- npm test incluye ahora las pruebas de credenciales de demostración.
+- Nuevo comando check:system para revisar la instalación sin modificar datos.
+
+Resultados de ejecución
+- Frontend: 65 pruebas aprobadas y compilación de producción correcta.
+- Backend: 5 pruebas unitarias aprobadas.
+- Integración con PostgreSQL y navegador: 10 pruebas aprobadas,
+  incluyendo el contenedor principal de la suite.
+- check:system: 23 comprobaciones correctas, 0 fallidas.
+- Validación estructural Power BI: 9 tablas, 12 relaciones, 18 medidas,
+  3 páginas y 41 visuales. No ejecuta TMDL ni DAX.
+- git diff --check: correcto.
+
+Las pruebas de escritura utilizaron bases temporales aisladas, eliminadas al
+terminar. La base configurada se inspeccionó con consultas de lectura y login;
+no se sembró, vació ni se restablecieron contraseñas.
+
+Funcionalidades pendientes o de alcance limitado
+- Compras, Finanzas y Recursos Humanos son prototipos con datos ilustrativos.
+  Sus operaciones y persistencia no están implementadas.
+- Usuarios, médicos y catálogo de servicios ofrecen consulta en el alcance actual;
+  no incluyen pantallas para crear, editar o eliminar esos registros.
+- Se comprobó la carga del informe público Power BI y las vistas PostgreSQL.
+  No se verificó el historial de actualización de Power BI Service ni del Gateway.
+
+Cómo repetir la revisión (desde backend, con ambos servidores iniciados)
+  npm.cmd test
+  npm.cmd run test:browser
+  npm.cmd run check:system
+
+Desde frontend
+  npm.cmd test -- --watch=false
+  npm.cmd run build
+
+check:system requiere las cuentas de demostración y sus claves locales actuales.
+test:browser requiere Microsoft Edge, Angular en localhost:4200 y permiso para
+crear y eliminar una base temporal PostgreSQL. Las capturas se actualizan en
+docs/evidencias. Ninguno de estos resultados garantiza ausencia de otros fallos.

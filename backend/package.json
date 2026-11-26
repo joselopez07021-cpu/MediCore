@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --test tests/validaciones.test.js",
+    "test": "node --test tests/validaciones.test.js tests/credenciales-demo.test.js",
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "dbPull": "prisma db pull",
@@ -12,6 +12,7 @@
     "dbStudio": "prisma studio",
     "dbSeed": "node prisma/seeds/principal.seed.js",
     "test:integration": "node --test tests/integracion.test.js",
+    "check:system": "node scripts/verificar-sistema.js",
     "test:browser": "node --test --import ./tests/activar-navegador.js tests/integracion.test.js"
   },
   "keywords": [],

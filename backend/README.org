@@ -306,7 +306,17 @@ Consultar los documentos Word de integración y Power BI del equipo.
 #+begin_src powershell
 pnpm.cmd test
 pnpm.cmd run test:integration
+pnpm.cmd run check:system
 #+end_src
+
+check:system revisa la base configurada y los servidores locales en ejecución
+(backend en PORT y frontend en localhost:4200). Es de solo lectura: comprueba
+migraciones, acceso de las nueve cuentas de demostración con sus claves locales,
+permisos, CORS, consultas de API frente a PostgreSQL, existencias y movimientos,
+consistencia de citas y atenciones, solapamientos y las nueve vistas analíticas.
+No modifica datos ni publica informes. Las cuentas de demostración deben existir
+y sus variables DEMO_*_PASSWORD deben coincidir con las claves actuales.
+Esta revisión no verifica Power BI Service, Gateway ni sus actualizaciones.
 
 La integración necesita una cuenta PostgreSQL con permiso CREATE DATABASE.
 Crea y elimina una base temporal medicore_test_<pid>_<timestamp>;

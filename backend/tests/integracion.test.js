@@ -168,6 +168,36 @@ test(
         );
         assert.equal((await pedir("/reportes", tokens.medico)).status, 403);
       });
+      await t.test("paginación y filtros inválidos devuelven 400 sin fallos internos", async () => {
+        for (const ruta of [
+          "/pacientes/paginados",
+          "/citas/paginados",
+          "/citas/agenda/paginados?fecha=2030-01-01",
+          "/insumos/paginados",
+          "/movimientos-inventario/paginados",
+          "/atenciones/paginados",
+        ]) {
+          for (const pagina of ["0", "abc", "1.5", "9007199254740991", "9007199254740992"]) {
+            const r = await pedir(`${ruta}${ruta.includes("?") ? "&" : "?"}page=${pagina}`, tokens.admin);
+            assert.equal(r.status, 400, `${ruta}, página ${pagina}`);
+          }
+        }
+        for (const filtro of [
+          "id_medico=9223372036854775808",
+          "id_medico=1&id_medico=1",
+          "fecha_desde=",
+          "fecha_hasta=",
+          "fecha_desde=2030-02-30",
+          "fecha_desde=2030-02-01&fecha_hasta=2030-01-01",
+        ]) {
+          assert.equal((await pedir(`/citas/resumen?${filtro}`, tokens.admin)).status, 400, filtro);
+        }
+        for (const ruta of ["/pacientes/paginados", "/citas/paginados", "/insumos/paginados", "/movimientos-inventario/paginados", "/atenciones/paginados"]) {
+          const r = await pedir(`${ruta}?page=1`, tokens.admin);
+          assert.equal(r.status, 200, ruta);
+          assert.ok(Array.isArray(r.body.data), ruta);
+        }
+      });
       let paciente;
       const datosPaciente = {
         nombre: "Paciente",

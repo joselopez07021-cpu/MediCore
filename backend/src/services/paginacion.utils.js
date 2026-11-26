@@ -1,21 +1,29 @@
+export class PaginacionError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "PaginacionError";
+    this.status = 400;
+  }
+}
+
 export const obtenerPaginacion = (page = "1", limite = 10) => {
   if (
     typeof page !== "string" ||
     !/^[1-9]\d*$/.test(page)
   ) {
-    throw new Error("El número de página debe ser un entero positivo");
+    throw new PaginacionError("El número de página debe ser un entero positivo");
   }
 
   const pagina = Number(page);
 
   if (!Number.isSafeInteger(pagina)) {
-    throw new Error("Número de página inválido");
+    throw new PaginacionError("Número de página inválido");
   }
 
   const skip = (pagina - 1) * limite;
 
   if (!Number.isSafeInteger(skip)) {
-    throw new Error("Número de página fuera de rango");
+    throw new PaginacionError("Número de página fuera de rango");
   }
 
   return {
