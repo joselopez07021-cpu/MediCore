@@ -229,6 +229,41 @@ describe('Operaciones de la interfaz conectadas a HTTP', () => {
     req.flush({ message: 'No disponible' }, { status: 409, statusText: 'Conflict' });
     expect(page.editing()).toBeTruthy();
   });
+  it('movimientos: actualiza el selector al abrir e incluye insumos nuevos sin existencias', () => {
+    const fixture = TestBed.createComponent(Movements);
+    fixture.detectChanges();
+    responder('movimientos-inventario', []);
+    responder('insumos', [insumo]);
+    const page = fixture.componentInstance;
+    page.open();
+    page.open();
+    expect(page.editing()).toBe(false);
+    expect(page.cargando()).toBe(true);
+    responder('insumos', [
+      insumo,
+      { ...insumo, id_insumo: '33', nombre: 'Insumo nuevo', stock_actual: '0', estado: 'AGOTADO' },
+    ]);
+    fixture.detectChanges();
+    expect(page.editing()).toBe(true);
+    expect(page.cargando()).toBe(false);
+    const option = fixture.nativeElement.querySelector('[role="dialog"] option[value="33"]');
+    expect(option?.textContent).toContain('Insumo nuevo · 0 ml');
+  });
+  it('movimientos: si falla la actualización del catálogo no abre un selector desactualizado', () => {
+    const fixture = TestBed.createComponent(Movements);
+    fixture.detectChanges();
+    responder('movimientos-inventario', []);
+    responder('insumos', [insumo]);
+    const page = fixture.componentInstance;
+    page.open();
+    http.expectOne('http://localhost:3000/api/insumos').flush(
+      { message: 'No se pudieron cargar los insumos' },
+      { status: 500, statusText: 'Internal Server Error' },
+    );
+    expect(page.editing()).toBe(false);
+    expect(page.cargando()).toBe(false);
+    expect(page.error()).toBe('No se pudieron cargar los insumos');
+  });
   it('movimientos: rechaza doble envío y conserva el editor si no hay stock', () => {
     const fixture = TestBed.createComponent(Movements);
     fixture.detectChanges();
@@ -236,6 +271,7 @@ describe('Operaciones de la interfaz conectadas a HTTP', () => {
     responder('insumos', [insumo]);
     const page = fixture.componentInstance;
     page.open();
+    responder('insumos', [insumo]);
     const datos = { id_insumo: ID, tipo_movimiento: 'SALIDA', cantidad: '100', motivo: 'Prueba' };
     page.save(datos);
     page.save(datos);
