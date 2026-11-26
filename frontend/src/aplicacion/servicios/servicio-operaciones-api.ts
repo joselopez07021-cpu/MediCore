@@ -30,6 +30,18 @@ export interface DatosCita {
   motivo: string;
   estado: Status;
 }
+export interface DatosMedico {
+  identificacion: string;
+  nombre: string;
+  apellido: string;
+  especialidad: string;
+  telefono: string;
+  correo: string;
+}
+export interface NuevoMedico extends DatosMedico {
+  nombre_usuario: string;
+  password: string;
+}
 export interface InsumoDto {
   id_insumo: string;
   id_categoria: string;
@@ -135,6 +147,20 @@ export class MedicosApi {
   private http = inject(HttpClient);
   listar() {
     return this.http.get<Respuesta<MedicoDto[]>>(`${API_CONFIG.baseUrl}/medicos`);
+  }
+  crear(datos: NuevoMedico) {
+    return this.http.post<Respuesta<MedicoDto>>(`${API_CONFIG.baseUrl}/medicos`, datos);
+  }
+  actualizar(id: string, datos: DatosMedico) {
+    return this.http.put<Respuesta<MedicoDto>>(`${API_CONFIG.baseUrl}/medicos/${id}`, datos);
+  }
+  desactivar(id: string) {
+    return this.http.delete<Respuesta<MedicoDto>>(`${API_CONFIG.baseUrl}/medicos/${id}`);
+  }
+  reactivar(id: string) {
+    return this.http.patch<Respuesta<MedicoDto>>(`${API_CONFIG.baseUrl}/medicos/${id}/estado`, {
+      activo: true,
+    });
   }
 }
 @Injectable({ providedIn: 'root' })

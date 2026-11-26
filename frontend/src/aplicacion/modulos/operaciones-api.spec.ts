@@ -6,6 +6,7 @@ import { Patients } from './admision/pacientes';
 import { Appointments } from './admision/citas';
 import { Supplies } from './inventario/insumos';
 import { Movements } from './inventario/movimientos';
+import { Doctors } from './admision/medicos';
 import { Reports, generarCsv } from './reportes/reportes';
 import { Agenda } from './admision/agenda';
 import { Auth } from '../nucleo/autenticacion';
@@ -48,6 +49,17 @@ const insumo = {
   estado: 'DISPONIBLE',
   activo: true,
   descripcion: null,
+};
+const medico = {
+  id_medico: ID,
+  identificacion: 'MED-1',
+  nombre: 'Ana',
+  apellido: 'Mora',
+  nombre_completo: 'Ana Mora',
+  especialidad: 'General',
+  telefono: '88888888',
+  correo: 'ana.medico@example.com',
+  activo: true,
 };
 const reporte = {
   total_citas: 1,
@@ -209,6 +221,79 @@ describe('Operaciones de la interfaz conectadas a HTTP', () => {
     page.doctor.set('2');
     expect(page.rows().map((c) => c.id_cita)).toEqual([ID]);
   });
+  it('médicos: crea con su cuenta, conserva el formulario ante duplicados y evita doble envío', () => {
+    const fixture = TestBed.createComponent(Doctors);
+    fixture.detectChanges();
+    responder('medicos', []);
+    const page = fixture.componentInstance;
+    page.open(null);
+    const datos = { ...medico, nombre_usuario: 'ana.medico', password: ' Medico123! ' };
+    page.save(datos);
+    page.save(datos);
+    const req = http.expectOne('http://localhost:3000/api/medicos');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body.password).toBe(' Medico123! ');
+    req.flush({ message: 'Usuario duplicado' }, { status: 409, statusText: 'Conflict' });
+    expect(page.editing()).toBeNull();
+    expect(page.error()).toBe('Usuario duplicado');
+    page.save(datos);
+    responder('medicos', medico);
+    expect(page.editing()).toBeUndefined();
+    expect(page.medicos()[0].id_medico).toBe(ID);
+  });
+  it('médicos: edita sin reenviar credenciales y cambia estado solo después de confirmar el servidor', () => {
+    const fixture = TestBed.createComponent(Doctors);
+    fixture.detectChanges();
+    responder('medicos', [medico]);
+    const page = fixture.componentInstance;
+    page.open(medico);
+    page.save({ ...medico, apellido: 'Rojas', password: 'NoEnviar123!', nombre_usuario: 'otro' });
+    const req = http.expectOne('http://localhost:3000/api/medicos/' + ID);
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body.password).toBeUndefined();
+    expect(req.request.body.nombre_usuario).toBeUndefined();
+    req.flush({ message: 'Actualizado', data: { ...medico, apellido: 'Rojas' } });
+    page.confirmar(page.medicos()[0]);
+    page.cambiarEstado(page.medicos()[0]);
+    expect(page.medicos()[0].activo).toBe(true);
+    http
+      .expectOne('http://localhost:3000/api/medicos/' + ID)
+      .flush({ message: 'Tiene citas pendientes' }, { status: 409, statusText: 'Conflict' });
+    expect(page.confirmando()).toBeTruthy();
+    expect(page.medicos()[0].activo).toBe(true);
+    page.cambiarEstado(page.medicos()[0]);
+    responder('medicos/' + ID, { ...medico, activo: false });
+    expect(page.medicos()[0].activo).toBe(false);
+    page.cambiarEstado(page.medicos()[0]);
+    const reactivar = http.expectOne('http://localhost:3000/api/medicos/' + ID + '/estado');
+    expect(reactivar.request.body).toEqual({ activo: true });
+    reactivar.flush({ message: 'Reactivado', data: medico });
+    expect(page.medicos()[0].activo).toBe(true);
+  });
+  it('médicos: admisión consulta el directorio sin controles de administración', () => {
+    TestBed.inject(Auth).guardarSesion({
+      token: 'admision',
+      token_type: 'Bearer',
+      usuario: {
+        id_usuario: '2',
+        nombre_usuario: 'recepcion',
+        nombre_completo: 'Recepción',
+        correo: 'recepcion@example.com',
+        rol: 'ADMISION',
+        id_medico: null,
+      },
+    });
+    const fixture = TestBed.createComponent(Doctors);
+    fixture.detectChanges();
+    responder('medicos', [medico]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Ana Mora');
+    expect(fixture.nativeElement.textContent).not.toContain('Nuevo médico');
+    expect(fixture.nativeElement.textContent).not.toContain('Desactivar');
+    fixture.componentInstance.open(null);
+    fixture.componentInstance.save({ ...medico, nombre_usuario: 'otro', password: 'Medico123!' });
+    http.expectNone((r) => r.method !== 'GET');
+  });
   it('insumos: al editar no envía stock_actual y mantiene mínimo entero', () => {
     const fixture = TestBed.createComponent(Supplies);
     fixture.detectChanges();
@@ -256,10 +341,12 @@ describe('Operaciones de la interfaz conectadas a HTTP', () => {
     responder('insumos', [insumo]);
     const page = fixture.componentInstance;
     page.open();
-    http.expectOne('http://localhost:3000/api/insumos').flush(
-      { message: 'No se pudieron cargar los insumos' },
-      { status: 500, statusText: 'Internal Server Error' },
-    );
+    http
+      .expectOne('http://localhost:3000/api/insumos')
+      .flush(
+        { message: 'No se pudieron cargar los insumos' },
+        { status: 500, statusText: 'Internal Server Error' },
+      );
     expect(page.editing()).toBe(false);
     expect(page.cargando()).toBe(false);
     expect(page.error()).toBe('No se pudieron cargar los insumos');

@@ -4,11 +4,12 @@ import { DialogFocus } from './enfoque-dialogo';
 export interface EditorField {
   key: string;
   label: string;
-  type?: 'text' | 'email' | 'date' | 'time' | 'number' | 'select' | 'textarea';
+  type?: 'text' | 'email' | 'date' | 'time' | 'number' | 'select' | 'textarea' | 'password';
   required?: boolean;
   min?: number;
   max?: string;
   maxLength?: number;
+  minLength?: number;
   options?: { value: string | number; label: string }[];
 }
 @Component({
@@ -66,6 +67,8 @@ export interface EditorField {
                     [formControlName]="f.key"
                     [attr.min]="f.min ?? null"
                     [attr.max]="f.max ?? null"
+                    [attr.minlength]="f.minLength ?? null"
+                    [attr.autocomplete]="f.type === 'password' ? 'new-password' : null"
                     [attr.step]="f.type === 'number' ? 1 : null"
                     [attr.maxlength]="f.maxLength ?? (f.type === 'text' || !f.type ? 200 : null)"
                   />
@@ -118,6 +121,7 @@ export class RecordEditor {
         if (f.required) rules.push(Validators.required, Validators.pattern(/[\s\S]*\S[\s\S]*/));
         if (f.type === 'email') rules.push(Validators.email);
         if (f.maxLength) rules.push(Validators.maxLength(f.maxLength));
+        if (f.minLength) rules.push(Validators.minLength(f.minLength));
         if (f.type === 'number') {
           rules.push(Validators.pattern(/^\d+$/));
           if (f.min !== undefined) rules.push(Validators.min(f.min));
@@ -133,7 +137,11 @@ export class RecordEditor {
     if (this.form.valid) {
       const result = this.form.getRawValue();
       for (const key of Object.keys(result)) {
-        if (typeof result[key] === 'string') result[key] = result[key].trim();
+        if (
+          typeof result[key] === 'string' &&
+          this.fields().find((f) => f.key === key)?.type !== 'password'
+        )
+          result[key] = result[key].trim();
       }
       this.save.emit(result);
     }
